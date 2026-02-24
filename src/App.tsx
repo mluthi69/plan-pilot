@@ -8,6 +8,9 @@ import Dashboard from "./pages/Dashboard";
 import Participants from "./pages/Participants";
 import Invoices from "./pages/Invoices";
 import Plans from "./pages/Plans";
+import Providers from "./pages/Providers";
+import TasksAndNotes from "./pages/TasksAndNotes";
+import PriceGuide from "./pages/PriceGuide";
 import PlaceholderPage from "./components/PlaceholderPage";
 import NotFound from "./pages/NotFound";
 
@@ -25,9 +28,9 @@ const App = () => (
             <Route path="/participants" element={<Participants />} />
             <Route path="/invoices" element={<Invoices />} />
             <Route path="/plans" element={<Plans />} />
-            <Route path="/providers" element={<PlaceholderPage title="Providers" description="Manage registered and unregistered service providers, ABN verification, and invoice routing." />} />
-            <Route path="/tasks" element={<PlaceholderPage title="Tasks & Notes" description="Support coordination tasks, case notes, contact logs, and participant goals tracking." />} />
-            <Route path="/price-guide" element={<PlaceholderPage title="NDIA Price Guide" description="NDIS Pricing Arrangements and Price Limits engine with regional/remote modifiers." />} />
+            <Route path="/providers" element={<Providers />} />
+            <Route path="/tasks" element={<TasksAndNotes />} />
+            <Route path="/price-guide" element={<PriceGuide />} />
             <Route path="/automations" element={<PlaceholderPage title="Automations" description="Configure event routing, webhooks, email connectors, and integration endpoints." />} />
             <Route path="/notifications" element={<PlaceholderPage title="Notifications" description="View and manage system notifications, alerts, and approval requests." />} />
             <Route path="/settings" element={<PlaceholderPage title="Settings" description="Tenant configuration, branding, workflows, permissions, and integrations." />} />
