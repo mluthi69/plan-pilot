@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { Search, Filter, Plus, MoreHorizontal } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
@@ -26,6 +27,7 @@ function ParticipantStatusBadge({ status }: { status: string }) {
 }
 
 export default function Participants() {
+  const navigate = useNavigate();
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -73,7 +75,7 @@ export default function Participants() {
             </thead>
             <tbody>
               {participants.map((p) => (
-                <tr key={p.id} className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors cursor-pointer">
+                <tr key={p.id} onClick={() => navigate(`/participants/${p.id}`)} className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors cursor-pointer">
                   <td className="px-5 py-3">
                     <p className="font-medium text-card-foreground">{p.name}</p>
                     <p className="text-xs text-muted-foreground">{p.id}</p>
