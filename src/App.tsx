@@ -11,7 +11,9 @@ import Plans from "./pages/Plans";
 import Providers from "./pages/Providers";
 import TasksAndNotes from "./pages/TasksAndNotes";
 import PriceGuide from "./pages/PriceGuide";
-import PlaceholderPage from "./components/PlaceholderPage";
+import Automations from "./pages/Automations";
+import Notifications from "./pages/Notifications";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,9 +33,9 @@ const App = () => (
             <Route path="/providers" element={<Providers />} />
             <Route path="/tasks" element={<TasksAndNotes />} />
             <Route path="/price-guide" element={<PriceGuide />} />
-            <Route path="/automations" element={<PlaceholderPage title="Automations" description="Configure event routing, webhooks, email connectors, and integration endpoints." />} />
-            <Route path="/notifications" element={<PlaceholderPage title="Notifications" description="View and manage system notifications, alerts, and approval requests." />} />
-            <Route path="/settings" element={<PlaceholderPage title="Settings" description="Tenant configuration, branding, workflows, permissions, and integrations." />} />
+            <Route path="/automations" element={<Automations />} />
+            <Route path="/notifications" element={<Notifications />} />
+            <Route path="/settings" element={<Settings />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
