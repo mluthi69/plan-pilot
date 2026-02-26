@@ -47,9 +47,13 @@ const navSections = [
   },
 ];
 
-export default function AppSidebar() {
+interface AppSidebarProps {
+  onNavigate?: () => void;
+}
+
+export default function AppSidebar({ onNavigate }: AppSidebarProps) {
   return (
-    <aside className="fixed inset-y-0 left-0 z-30 flex w-60 flex-col bg-sidebar text-sidebar-foreground">
+    <aside className="fixed inset-y-0 left-0 z-30 flex w-60 flex-col bg-sidebar text-sidebar-foreground md:relative md:z-auto">
       {/* Brand */}
       <div className="flex h-14 items-center gap-2 border-b border-sidebar-border px-5">
         <div className="flex h-7 w-7 items-center justify-center rounded-md bg-sidebar-primary">
@@ -70,7 +74,7 @@ export default function AppSidebar() {
         <div className="flex items-center gap-2 rounded-md border border-sidebar-border bg-sidebar-accent/30 px-3 py-1.5 text-xs text-sidebar-muted">
           <Search className="h-3.5 w-3.5" />
           <span>Search…</span>
-          <kbd className="ml-auto rounded border border-sidebar-border bg-sidebar-accent/50 px-1 py-0.5 text-[10px] text-sidebar-muted">⌘K</kbd>
+          <kbd className="ml-auto hidden sm:inline-block rounded border border-sidebar-border bg-sidebar-accent/50 px-1 py-0.5 text-[10px] text-sidebar-muted">⌘K</kbd>
         </div>
       </div>
 
@@ -86,6 +90,7 @@ export default function AppSidebar() {
                 key={item.to}
                 to={item.to}
                 end={item.to === "/"}
+                onClick={onNavigate}
                 className={({ isActive }) =>
                   `flex items-center gap-2.5 rounded-md px-2 py-1.5 text-sm transition-colors ${
                     isActive
