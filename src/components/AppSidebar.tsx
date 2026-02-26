@@ -53,7 +53,7 @@ interface AppSidebarProps {
 
 export default function AppSidebar({ onNavigate }: AppSidebarProps) {
   return (
-    <aside className="fixed inset-y-0 left-0 z-30 flex w-60 flex-col bg-sidebar text-sidebar-foreground md:relative md:z-auto">
+    <aside className="flex h-screen w-60 flex-col bg-sidebar text-sidebar-foreground shrink-0 sticky top-0">
       {/* Brand */}
       <div className="flex h-14 items-center gap-2 border-b border-sidebar-border px-5">
         <div className="flex h-7 w-7 items-center justify-center rounded-md bg-sidebar-primary">

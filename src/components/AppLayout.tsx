@@ -10,11 +10,11 @@ export default function AppLayout() {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex min-h-screen bg-background">
       {/* Desktop sidebar */}
       {!isMobile && <AppSidebar />}
 
-      <div className={isMobile ? "" : "pl-60"}>
+      <div className="flex-1 min-w-0">
         {/* Top bar */}
         <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-border bg-background/80 px-4 sm:px-6 backdrop-blur-sm">
           <div className="flex items-center gap-2">
