@@ -2,7 +2,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/clerk-react";
 import AppLayout from "./components/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import Participants from "./pages/Participants";
@@ -16,6 +17,8 @@ import Automations from "./pages/Automations";
 import Notifications from "./pages/Notifications";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+import SignInPage from "./pages/SignIn";
+import SignUpPage from "./pages/SignUp";
 
 const queryClient = new QueryClient();
 
@@ -26,7 +29,23 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route element={<AppLayout />}>
+          {/* Public auth routes */}
+          <Route path="/sign-in/*" element={<SignInPage />} />
+          <Route path="/sign-up/*" element={<SignUpPage />} />
+
+          {/* Protected app routes */}
+          <Route
+            element={
+              <>
+                <SignedIn>
+                  <AppLayout />
+                </SignedIn>
+                <SignedOut>
+                  <RedirectToSignIn />
+                </SignedOut>
+              </>
+            }
+          >
             <Route path="/" element={<Dashboard />} />
             <Route path="/participants" element={<Participants />} />
             <Route path="/participants/:id" element={<ParticipantDetail />} />
