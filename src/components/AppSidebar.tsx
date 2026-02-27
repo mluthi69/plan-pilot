@@ -1,4 +1,5 @@
 import { NavLink } from "react-router-dom";
+import { OrganizationSwitcher, UserButton } from "@clerk/clerk-react";
 import {
   LayoutDashboard,
   Users,
@@ -11,7 +12,6 @@ import {
   BookOpen,
   Building2,
   Search,
-  ChevronDown,
 } from "lucide-react";
 
 const navSections = [
@@ -62,12 +62,22 @@ export default function AppSidebar({ onNavigate }: AppSidebarProps) {
         <span className="text-sm font-semibold text-sidebar-accent-foreground">NDIS Ops</span>
       </div>
 
-      {/* Tenant selector */}
-      <button className="mx-3 mt-3 flex items-center gap-2 rounded-md border border-sidebar-border bg-sidebar-accent/50 px-3 py-2 text-xs text-sidebar-accent-foreground hover:bg-sidebar-accent transition-colors">
-        <Building2 className="h-3.5 w-3.5 text-sidebar-muted" />
-        <span className="flex-1 truncate text-left">Acme Plan Managers</span>
-        <ChevronDown className="h-3 w-3 text-sidebar-muted" />
-      </button>
+      {/* Tenant selector — Clerk OrganizationSwitcher */}
+      <div className="mx-3 mt-3">
+        <OrganizationSwitcher
+          hidePersonal
+          appearance={{
+            elements: {
+              rootBox: "w-full",
+              organizationSwitcherTrigger:
+                "w-full flex items-center gap-2 rounded-md border border-sidebar-border bg-sidebar-accent/50 px-3 py-2 text-xs text-sidebar-accent-foreground hover:bg-sidebar-accent transition-colors",
+            },
+          }}
+          afterCreateOrganizationUrl="/"
+          afterLeaveOrganizationUrl="/"
+          afterSelectOrganizationUrl="/"
+        />
+      </div>
 
       {/* Search */}
       <div className="mx-3 mt-3">
@@ -107,17 +117,19 @@ export default function AppSidebar({ onNavigate }: AppSidebarProps) {
         ))}
       </nav>
 
-      {/* User */}
+      {/* User — Clerk UserButton */}
       <div className="border-t border-sidebar-border p-3">
-        <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-sidebar-accent text-xs font-medium text-sidebar-accent-foreground">
-            JD
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="truncate text-xs font-medium text-sidebar-accent-foreground">Jane Doe</p>
-            <p className="truncate text-[10px] text-sidebar-muted">Plan Manager</p>
-          </div>
-        </div>
+        <UserButton
+          showName
+          appearance={{
+            elements: {
+              rootBox: "w-full",
+              userButtonBox: "w-full flex-row-reverse justify-end",
+              userButtonOuterIdentifier: "text-xs font-medium text-sidebar-accent-foreground",
+              avatarBox: "h-7 w-7",
+            },
+          }}
+        />
       </div>
     </aside>
   );

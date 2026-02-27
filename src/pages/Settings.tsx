@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Building2, Palette, Users, Shield, Link2, CreditCard, FileText, Save } from "lucide-react";
+import { useOrganization } from "@clerk/clerk-react";
+import { Building2, Palette, Users, Shield, Link2, CreditCard, FileText, Save, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -37,7 +38,9 @@ const integrations = [
 
 export default function Settings() {
   const [tab, setTab] = useState("organisation");
-
+  const { memberships, isLoaded: orgLoaded } = useOrganization({
+    memberships: { infinite: true },
+  });
   return (
     <div className="space-y-6">
       <div>
@@ -141,35 +144,65 @@ export default function Settings() {
             <CardHeader className="flex-row items-center justify-between">
               <div>
                 <CardTitle className="text-sm">Roles & Permissions</CardTitle>
-                <CardDescription>Manage security roles and permission bundles for your organisation.</CardDescription>
+                <CardDescription>Manage security roles and permission bundles for your organisation. Roles are configured in the Clerk Dashboard.</CardDescription>
               </div>
-              <Button size="sm" variant="outline"><Shield className="mr-1.5 h-3.5 w-3.5" />Create Custom Role</Button>
+              <Button size="sm" variant="outline" asChild>
+                <a href="https://dashboard.clerk.com" target="_blank" rel="noopener noreferrer">
+                  <Shield className="mr-1.5 h-3.5 w-3.5" />Manage in Clerk
+                </a>
+              </Button>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="divide-y">
-                {roles.map((role) => (
-                  <div key={role.name} className="flex items-center justify-between px-6 py-3">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium">{role.name}</p>
-                        {role.builtin ? (
-                          <Badge variant="outline" className="text-[10px] h-4 px-1.5">Built-in</Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-[10px] h-4 px-1.5 bg-accent/10 text-accent border-accent/20">Custom</Badge>
-                        )}
+              {!orgLoaded ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                </div>
+              ) : (
+                <div className="divide-y">
+                  {/* Static built-in roles reference */}
+                  {roles.map((role) => (
+                    <div key={role.name} className="flex items-center justify-between px-6 py-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium">{role.name}</p>
+                          {role.builtin ? (
+                            <Badge variant="outline" className="text-[10px] h-4 px-1.5">Built-in</Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-[10px] h-4 px-1.5 bg-accent/10 text-accent border-accent/20">Custom</Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5">{role.permissions}</p>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-0.5">{role.permissions}</p>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-1.5">
-                        <Users className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground">{role.users}</span>
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-1.5">
+                          <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span className="text-xs text-muted-foreground">{role.users}</span>
+                        </div>
+                        <Button variant="ghost" size="sm" className="text-xs h-7">Edit</Button>
                       </div>
-                      <Button variant="ghost" size="sm" className="text-xs h-7">Edit</Button>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                  {/* Live org members from Clerk */}
+                  {memberships?.data && memberships.data.length > 0 && (
+                    <>
+                      <div className="px-6 py-2 bg-muted/50">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Organisation Members (Live)</p>
+                      </div>
+                      {memberships.data.map((m) => (
+                        <div key={m.id} className="flex items-center justify-between px-6 py-3">
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">
+                              {m.publicUserData?.firstName} {m.publicUserData?.lastName}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-0.5">{m.publicUserData?.identifier}</p>
+                          </div>
+                          <Badge variant="outline" className="text-[10px] h-4 px-1.5">{m.role}</Badge>
+                        </div>
+                      ))}
+                    </>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
