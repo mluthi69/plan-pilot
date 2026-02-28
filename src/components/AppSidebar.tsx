@@ -1,5 +1,6 @@
 import { NavLink } from "react-router-dom";
 import { OrganizationSwitcher, UserButton } from "@clerk/clerk-react";
+import { useSystemAdmin } from "@/hooks/useSystemAdmin";
 import {
   LayoutDashboard,
   Users,
@@ -12,6 +13,7 @@ import {
   BookOpen,
   Building2,
   Search,
+  Shield,
 } from "lucide-react";
 
 const navSections = [
@@ -52,6 +54,8 @@ interface AppSidebarProps {
 }
 
 export default function AppSidebar({ onNavigate }: AppSidebarProps) {
+  const { isSystemAdmin } = useSystemAdmin();
+
   return (
     <aside className="flex h-screen w-60 flex-col bg-sidebar text-sidebar-foreground shrink-0 sticky top-0">
       {/* Brand */}
@@ -116,6 +120,20 @@ export default function AppSidebar({ onNavigate }: AppSidebarProps) {
           </div>
         ))}
       </nav>
+
+      {/* Admin link */}
+      {isSystemAdmin && (
+        <div className="mx-3 mb-2">
+          <NavLink
+            to="/admin"
+            onClick={onNavigate}
+            className="flex items-center gap-2 rounded-md bg-destructive/10 px-2 py-1.5 text-sm font-medium text-destructive hover:bg-destructive/20 transition-colors"
+          >
+            <Shield className="h-4 w-4" />
+            Super Admin
+          </NavLink>
+        </div>
+      )}
 
       {/* User — Clerk UserButton */}
       <div className="border-t border-sidebar-border p-3">
