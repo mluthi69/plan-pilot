@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 
-export type InvoiceStatus = "pending" | "approved" | "processing" | "paid" | "exception";
+export type InvoiceStatus = "pending" | "approved" | "processing" | "paid" | "exception" | "rejected";
 
 const statusConfig: Record<InvoiceStatus, { label: string; className: string }> = {
   pending: { label: "Pending", className: "bg-warning/10 text-warning border-warning/20" },
@@ -8,6 +8,7 @@ const statusConfig: Record<InvoiceStatus, { label: string; className: string }> 
   processing: { label: "Processing", className: "bg-accent/10 text-accent border-accent/20" },
   paid: { label: "Paid", className: "bg-success/10 text-success border-success/20" },
   exception: { label: "Exception", className: "bg-destructive/10 text-destructive border-destructive/20" },
+  rejected: { label: "Rejected", className: "bg-destructive/10 text-destructive border-destructive/20" },
 };
 
 export default function StatusBadge({ status }: { status: InvoiceStatus }) {
