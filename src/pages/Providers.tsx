@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { Search, Filter, Plus, Building2, CheckCircle2, XCircle, MoreHorizontal, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
