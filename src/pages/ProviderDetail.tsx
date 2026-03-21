@@ -2,7 +2,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Building2, Mail, Phone, Globe, MoreHorizontal } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { StatusBadge } from "@/components/StatusBadge";
+import StatusBadge from "@/components/StatusBadge";
 import { Separator } from "@/components/ui/separator";
 
 /* ── mock data ─────────────────────────────────────────────── */
