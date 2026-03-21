@@ -4,8 +4,6 @@ import { useSystemAdmin } from "@/hooks/useSystemAdmin";
 import {
   LayoutDashboard,
   Users,
-  FileText,
-  Wallet,
   ClipboardList,
   Settings,
   Bell,
@@ -27,8 +25,6 @@ const navSections = [
     label: "Operations",
     items: [
       { to: "/participants", icon: Users, label: "Participants" },
-      { to: "/plans", icon: Wallet, label: "Plans & Budgets" },
-      { to: "/invoices", icon: FileText, label: "Invoices" },
       { to: "/providers", icon: Building2, label: "Providers" },
     ],
   },

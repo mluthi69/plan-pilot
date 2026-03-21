@@ -11,8 +11,7 @@ import RequireSystemAdmin from "./components/RequireSystemAdmin";
 import Dashboard from "./pages/Dashboard";
 import Participants from "./pages/Participants";
 import ParticipantDetail from "./pages/ParticipantDetail";
-import Invoices from "./pages/Invoices";
-import Plans from "./pages/Plans";
+import ProviderDetail from "./pages/ProviderDetail";
 import Providers from "./pages/Providers";
 import TasksAndNotes from "./pages/TasksAndNotes";
 import PriceGuide from "./pages/PriceGuide";
@@ -78,9 +77,8 @@ const App = () => (
               <Route path="/" element={<Dashboard />} />
               <Route path="/participants" element={<Participants />} />
               <Route path="/participants/:id" element={<ParticipantDetail />} />
-              <Route path="/invoices" element={<Invoices />} />
-              <Route path="/plans" element={<Plans />} />
               <Route path="/providers" element={<Providers />} />
+              <Route path="/providers/:id" element={<ProviderDetail />} />
               <Route path="/tasks" element={<TasksAndNotes />} />
               <Route path="/price-guide" element={<PriceGuide />} />
               <Route path="/automations" element={<Automations />} />

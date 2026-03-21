@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { Search, Filter, Plus, Building2, CheckCircle2, XCircle, MoreHorizontal, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
@@ -36,6 +37,8 @@ const statusStyles: Record<ProviderStatus, string> = {
 };
 
 export default function Providers() {
+  const navigate = useNavigate();
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -100,7 +103,7 @@ export default function Providers() {
             </thead>
             <tbody>
               {providers.map((p) => (
-                <tr key={p.id} className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors cursor-pointer">
+                <tr key={p.id} onClick={() => navigate(`/providers/${p.id}`)} className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors cursor-pointer">
                   <td className="px-5 py-3">
                     <p className="font-medium text-card-foreground">{p.name}</p>
                     <p className="text-xs text-muted-foreground">{p.contact} · {p.email}</p>
