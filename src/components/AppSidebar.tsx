@@ -4,8 +4,6 @@ import { useSystemAdmin } from "@/hooks/useSystemAdmin";
 import {
   LayoutDashboard,
   Users,
-  FileText,
-  Wallet,
   ClipboardList,
   Settings,
   Bell,
