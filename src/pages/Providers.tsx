@@ -37,7 +37,8 @@ const statusStyles: Record<ProviderStatus, string> = {
 };
 
 export default function Providers() {
-  return (
+  const navigate = useNavigate();
+
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
