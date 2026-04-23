@@ -10,6 +10,9 @@ import { useProviderInvoices } from "@/hooks/useInvoices";
 import { useProviderContracts } from "@/hooks/useContracts";
 import { useEntityActivity } from "@/hooks/useActivityLog";
 import ProviderFormDialog from "@/components/ProviderFormDialog";
+import { useProviderStats } from "@/hooks/useProviderStats";
+import { checkAbn } from "@/lib/abn";
+import { TrendingUp, DollarSign, Receipt, AlertTriangle, CheckCircle2, AlertCircle } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,6 +43,7 @@ export default function ProviderDetail() {
   const { data: invoices = [] } = useProviderInvoices(id);
   const { data: contracts = [] } = useProviderContracts(id);
   const { data: activity = [] } = useEntityActivity("provider", id);
+  const { data: stats } = useProviderStats(id);
   const deleteProvider = useDeleteProvider();
   const [showEdit, setShowEdit] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
@@ -144,6 +148,37 @@ export default function ProviderDetail() {
           ))}
         </div>
       )}
+
+      {/* ABN verification + YTD stats */}
+      <div className="grid gap-3 sm:grid-cols-4">
+        <div className="rounded-lg border border-border bg-card p-3">
+          <p className="text-[11px] text-muted-foreground">ABN status</p>
+          {(() => {
+            const c = checkAbn(provider.abn);
+            return (
+              <p className={`mt-1 flex items-center gap-1.5 text-sm font-semibold ${c.valid ? "text-success" : "text-destructive"}`}>
+                {c.valid ? <CheckCircle2 className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+                {c.valid ? "Verified" : "Invalid"}
+              </p>
+            );
+          })()}
+        </div>
+        <div className="rounded-lg border border-border bg-card p-3">
+          <p className="text-[11px] text-muted-foreground">YTD invoiced</p>
+          <p className="mt-1 text-sm font-semibold flex items-center gap-1.5"><DollarSign className="h-4 w-4 text-muted-foreground" />${(stats?.ytdAmount ?? 0).toLocaleString("en-AU", { minimumFractionDigits: 2 })}</p>
+        </div>
+        <div className="rounded-lg border border-border bg-card p-3">
+          <p className="text-[11px] text-muted-foreground">YTD invoices</p>
+          <p className="mt-1 text-sm font-semibold flex items-center gap-1.5"><Receipt className="h-4 w-4 text-muted-foreground" />{stats?.ytdInvoiceCount ?? 0}</p>
+        </div>
+        <div className="rounded-lg border border-border bg-card p-3">
+          <p className="text-[11px] text-muted-foreground">Outstanding</p>
+          <p className={`mt-1 text-sm font-semibold flex items-center gap-1.5 ${(stats?.exceptionsCount ?? 0) > 0 ? "text-destructive" : ""}`}>
+            {(stats?.exceptionsCount ?? 0) > 0 ? <AlertTriangle className="h-4 w-4" /> : <TrendingUp className="h-4 w-4 text-muted-foreground" />}
+            ${(stats?.outstandingAmount ?? 0).toLocaleString("en-AU", { minimumFractionDigits: 2 })}
+          </p>
+        </div>
+      </div>
 
       {/* Tabs */}
       <Tabs defaultValue="invoices" className="w-full">

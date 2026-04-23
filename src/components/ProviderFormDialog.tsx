@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCreateProvider, useUpdateProvider, type Provider } from "@/hooks/useProviders";
+import { checkAbn, formatAbn } from "@/lib/abn";
+import { CheckCircle2, AlertCircle } from "lucide-react";
 
 interface ProviderFormDialogProps {
   open: boolean;
@@ -31,11 +33,14 @@ export default function ProviderFormDialog({ open, onOpenChange, provider }: Pro
     address: provider?.address ?? "",
   });
 
+  const abnCheck = checkAbn(form.abn);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!abnCheck.valid) return; // hard-block invalid ABN
     const payload = {
       name: form.name,
-      abn: form.abn,
+      abn: abnCheck.formatted, // store canonical-formatted value
       registration: form.registration as "registered" | "unregistered",
       status: form.status as "active" | "inactive" | "pending",
       services: form.services.split(",").map((s) => s.trim()).filter(Boolean),
@@ -69,7 +74,20 @@ export default function ProviderFormDialog({ open, onOpenChange, provider }: Pro
             </div>
             <div>
               <Label htmlFor="abn">ABN *</Label>
-              <Input id="abn" value={form.abn} onChange={(e) => set("abn", e.target.value)} required />
+              <Input
+                id="abn"
+                value={form.abn}
+                onChange={(e) => set("abn", e.target.value)}
+                onBlur={() => set("abn", formatAbn(form.abn))}
+                required
+                aria-invalid={!abnCheck.valid && form.abn.length > 0}
+              />
+              {form.abn.length > 0 && (
+                <p className={`mt-1 flex items-center gap-1 text-[11px] ${abnCheck.valid ? "text-success" : "text-destructive"}`}>
+                  {abnCheck.valid ? <CheckCircle2 className="h-3 w-3" /> : <AlertCircle className="h-3 w-3" />}
+                  {abnCheck.valid ? "Valid ABN" : abnCheck.reason}
+                </p>
+              )}
             </div>
             <div>
               <Label htmlFor="registration">Registration</Label>
