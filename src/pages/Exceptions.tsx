@@ -1,8 +1,10 @@
 import { Link } from "react-router-dom";
-import { AlertTriangle, ChevronRight, Calendar, ClipboardCheck, FileSignature } from "lucide-react";
+import { AlertTriangle, ChevronRight, Calendar, ClipboardCheck, FileSignature, Receipt, FileText } from "lucide-react";
 import { useVisits } from "@/hooks/useVisits";
 import { useBookings } from "@/hooks/useBookings";
 import { useAgreements } from "@/hooks/useAgreements";
+import { useInvoices } from "@/hooks/useInvoices";
+import { useDraftInvoiceCandidates } from "@/hooks/useDraftInvoices";
 
 function startOfDay(d: Date) { const x = new Date(d); x.setHours(0,0,0,0); return x; }
 
@@ -14,6 +16,8 @@ export default function Exceptions() {
     to: new Date(today.getTime() + 7 * 86400000).toISOString(),
   });
   const { data: agreements = [] } = useAgreements();
+  const { data: invoices = [] } = useInvoices();
+  const { data: drafts = [] } = useDraftInvoiceCandidates();
 
   const groups: { title: string; icon: any; items: { id: string; label: string; sub: string; to: string }[] }[] = [
     {
@@ -78,6 +82,30 @@ export default function Exceptions() {
           label: a.title,
           sub: `Ends ${new Date(a.end_date).toLocaleDateString("en-AU")}`,
           to: `/agreements`,
+        })),
+    },
+    {
+      title: "Visits ready to invoice",
+      icon: FileText,
+      items: drafts
+        .filter((d) => d.warnings.length === 0 && d.amount && d.amount > 0)
+        .map((d) => ({
+          id: d.visit_id,
+          label: `${d.participant_name} — $${d.amount?.toFixed(2)}`,
+          sub: `${d.duration_hours}h · ${new Date(d.scheduled_start).toLocaleDateString("en-AU")}`,
+          to: `/invoices/drafts`,
+        })),
+    },
+    {
+      title: "Rejected invoices",
+      icon: Receipt,
+      items: invoices
+        .filter((i) => i.status === "rejected" || i.status === "exception")
+        .map((i) => ({
+          id: i.id,
+          label: `${i.invoice_number} — $${Number(i.amount).toFixed(2)}`,
+          sub: `${i.participant_name ?? "—"} · ${i.status}`,
+          to: `/invoices`,
         })),
     },
   ];
