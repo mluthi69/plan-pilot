@@ -1,3 +1,4 @@
+/// <reference types="google.maps" />
 import { useEffect, useMemo, useRef } from "react";
 import { useGoogleMaps } from "@/hooks/useGoogleMaps";
 import { useBookings } from "@/hooks/useBookings";
