@@ -17,7 +17,6 @@ import {
 import { Plus, Users, UserCircle2 } from "lucide-react";
 import {
   useBookings,
-  useCreateBooking,
   useUpdateBooking,
   type Booking,
   type BookingStatus,
@@ -78,7 +77,6 @@ export default function Schedule() {
   const { data: bookings = [] } = useBookings();
   const { data: participants = [] } = useParticipants();
   const { data: staff = [] } = useStaff();
-  const createBooking = useCreateBooking();
   const updateBooking = useUpdateBooking();
 
   // ?create=1 deep-link from sidebar
@@ -173,7 +171,7 @@ export default function Schedule() {
   }
 
   /** Click an empty slot → open create drawer prefilled with that time. */
-  function handleSlotClick(e: SchedulerSlotClickEvent) {
+  function handleSlotClick(e: { start: Date }) {
     setDrawerDefaultDate(e.start);
     setDrawerOpen(true);
   }
@@ -227,6 +225,7 @@ export default function Schedule() {
             drag: true,
             resize: true,
             edit: true,
+            select: true,
           }}
           group={group}
           resources={resources}
