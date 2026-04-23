@@ -55,13 +55,32 @@ export default function MyDay() {
         </div>
       ) : (
         <ul className="space-y-3">
-          {list.map((v) => {
+          {list.map((v, idx) => {
             const isInProgress = v.status === "in_progress";
             const isDone = v.status === "completed";
             const needsNote = isDone && !v.notes_submitted;
+            const prev = idx > 0 ? list[idx - 1] : null;
+            const hasHop =
+              prev &&
+              prev.end_lat != null && prev.end_lng != null &&
+              v.end_lat != null && v.end_lng != null;
+            const hopKm = hasHop
+              ? haversineKm(
+                  { lat: prev!.end_lat as number, lng: prev!.end_lng as number },
+                  { lat: v.end_lat as number, lng: v.end_lng as number }
+                )
+              : null;
+            // Rough driving estimate: 40 km/h average urban + 2 min buffer.
+            const hopMin = hopKm != null ? Math.round((hopKm / 40) * 60 + 2) : null;
 
             return (
-              <li key={v.id}>
+              <li key={v.id} className="space-y-2">
+                {hopKm != null && (
+                  <div className="ml-20 flex items-center gap-2 text-[11px] text-muted-foreground">
+                    <Navigation className="h-3 w-3" />
+                    <span>~{hopKm.toFixed(1)} km · {hopMin} min drive from previous stop</span>
+                  </div>
+                )}
                 <Link
                   to={`/visits/${v.id}`}
                   className={`flex items-stretch overflow-hidden rounded-xl border bg-card transition-shadow hover:shadow-sm ${
