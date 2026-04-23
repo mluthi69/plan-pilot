@@ -96,12 +96,16 @@ export type Database = {
           ends_at: string
           id: string
           location: string | null
+          location_address: string | null
+          location_source: string
           notes: string | null
           org_id: string
           participant_id: string
           service_type: string
+          staff_id: string | null
           starts_at: string
           status: string
+          support_category: string | null
           support_item_code: string | null
           updated_at: string
         }
@@ -114,12 +118,16 @@ export type Database = {
           ends_at: string
           id?: string
           location?: string | null
+          location_address?: string | null
+          location_source?: string
           notes?: string | null
           org_id: string
           participant_id: string
           service_type?: string
+          staff_id?: string | null
           starts_at: string
           status?: string
+          support_category?: string | null
           support_item_code?: string | null
           updated_at?: string
         }
@@ -132,16 +140,35 @@ export type Database = {
           ends_at?: string
           id?: string
           location?: string | null
+          location_address?: string | null
+          location_source?: string
           notes?: string | null
           org_id?: string
           participant_id?: string
           service_type?: string
+          staff_id?: string | null
           starts_at?: string
           status?: string
+          support_category?: string | null
           support_item_code?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "bookings_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_support_category_fkey"
+            columns: ["support_category"]
+            isOneToOne: false
+            referencedRelation: "ndis_support_categories"
+            referencedColumns: ["code"]
+          },
+        ]
       }
       contracts: {
         Row: {
@@ -313,6 +340,27 @@ export type Database = {
           subject?: string | null
           template_key?: string | null
           visit_id?: string | null
+        }
+        Relationships: []
+      }
+      ndis_support_categories: {
+        Row: {
+          budget_bucket: string
+          code: string
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          budget_bucket: string
+          code: string
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          budget_bucket?: string
+          code?: string
+          name?: string
+          sort_order?: number
         }
         Relationships: []
       }
@@ -552,6 +600,262 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      staff: {
+        Row: {
+          address: string | null
+          bank_acct_last3: string | null
+          bank_bsb_last3: string | null
+          bookable: boolean
+          contracted_hours_per_week: number | null
+          created_at: string
+          date_of_birth: string | null
+          drivers_licence_no: string | null
+          email: string | null
+          employment_type: string
+          end_date: string | null
+          first_aid_expiry: string | null
+          first_name: string
+          gender: string | null
+          id: string
+          last_name: string
+          mobile: string | null
+          ndis_worker_screening_no: string | null
+          notes: string | null
+          org_id: string
+          phone: string | null
+          postcode: string | null
+          preferred_name: string | null
+          screening_expiry: string | null
+          start_date: string | null
+          state: string | null
+          status: string
+          suburb: string | null
+          super_fund: string | null
+          tfn_last4: string | null
+          updated_at: string
+          vehicle_available: boolean
+          working_with_children_no: string | null
+          wwc_expiry: string | null
+        }
+        Insert: {
+          address?: string | null
+          bank_acct_last3?: string | null
+          bank_bsb_last3?: string | null
+          bookable?: boolean
+          contracted_hours_per_week?: number | null
+          created_at?: string
+          date_of_birth?: string | null
+          drivers_licence_no?: string | null
+          email?: string | null
+          employment_type?: string
+          end_date?: string | null
+          first_aid_expiry?: string | null
+          first_name: string
+          gender?: string | null
+          id?: string
+          last_name: string
+          mobile?: string | null
+          ndis_worker_screening_no?: string | null
+          notes?: string | null
+          org_id: string
+          phone?: string | null
+          postcode?: string | null
+          preferred_name?: string | null
+          screening_expiry?: string | null
+          start_date?: string | null
+          state?: string | null
+          status?: string
+          suburb?: string | null
+          super_fund?: string | null
+          tfn_last4?: string | null
+          updated_at?: string
+          vehicle_available?: boolean
+          working_with_children_no?: string | null
+          wwc_expiry?: string | null
+        }
+        Update: {
+          address?: string | null
+          bank_acct_last3?: string | null
+          bank_bsb_last3?: string | null
+          bookable?: boolean
+          contracted_hours_per_week?: number | null
+          created_at?: string
+          date_of_birth?: string | null
+          drivers_licence_no?: string | null
+          email?: string | null
+          employment_type?: string
+          end_date?: string | null
+          first_aid_expiry?: string | null
+          first_name?: string
+          gender?: string | null
+          id?: string
+          last_name?: string
+          mobile?: string | null
+          ndis_worker_screening_no?: string | null
+          notes?: string | null
+          org_id?: string
+          phone?: string | null
+          postcode?: string | null
+          preferred_name?: string | null
+          screening_expiry?: string | null
+          start_date?: string | null
+          state?: string | null
+          status?: string
+          suburb?: string | null
+          super_fund?: string | null
+          tfn_last4?: string | null
+          updated_at?: string
+          vehicle_available?: boolean
+          working_with_children_no?: string | null
+          wwc_expiry?: string | null
+        }
+        Relationships: []
+      }
+      staff_availability: {
+        Row: {
+          created_at: string
+          day_of_week: number
+          effective_from: string | null
+          effective_to: string | null
+          ends_time: string
+          id: string
+          kind: string
+          org_id: string
+          staff_id: string
+          starts_time: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          day_of_week: number
+          effective_from?: string | null
+          effective_to?: string | null
+          ends_time: string
+          id?: string
+          kind?: string
+          org_id: string
+          staff_id: string
+          starts_time: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          day_of_week?: number
+          effective_from?: string | null
+          effective_to?: string | null
+          ends_time?: string
+          id?: string
+          kind?: string
+          org_id?: string
+          staff_id?: string
+          starts_time?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_availability_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_availability_exception: {
+        Row: {
+          created_at: string
+          ends_at: string
+          id: string
+          kind: string
+          org_id: string
+          reason: string | null
+          staff_id: string
+          starts_at: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          ends_at: string
+          id?: string
+          kind?: string
+          org_id: string
+          reason?: string | null
+          staff_id: string
+          starts_at: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          ends_at?: string
+          id?: string
+          kind?: string
+          org_id?: string
+          reason?: string | null
+          staff_id?: string
+          starts_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_availability_exception_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_skills: {
+        Row: {
+          certified_at: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          org_id: string
+          proficiency: string
+          staff_id: string
+          support_category: string
+          updated_at: string
+        }
+        Insert: {
+          certified_at?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          org_id: string
+          proficiency?: string
+          staff_id: string
+          support_category: string
+          updated_at?: string
+        }
+        Update: {
+          certified_at?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          org_id?: string
+          proficiency?: string
+          staff_id?: string
+          support_category?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_skills_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_skills_support_category_fkey"
+            columns: ["support_category"]
+            isOneToOne: false
+            referencedRelation: "ndis_support_categories"
+            referencedColumns: ["code"]
+          },
+        ]
       }
       visits: {
         Row: {
