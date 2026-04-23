@@ -59,7 +59,7 @@ export function useBookings(range?: { from?: string; to?: string }) {
     queryFn: async () => {
       let q = (supabase as any)
         .from("bookings")
-        .select("*, participants(name)")
+        .select("*, participants(name, address), staff(first_name, last_name, preferred_name)")
         .eq("org_id", orgId)
         .order("starts_at", { ascending: true });
       if (range?.from) q = q.gte("starts_at", range.from);
@@ -69,6 +69,9 @@ export function useBookings(range?: { from?: string; to?: string }) {
       return (data ?? []).map((b: any) => ({
         ...b,
         participant_name: b.participants?.name,
+        staff_name: b.staff
+          ? `${b.staff.preferred_name?.trim() || b.staff.first_name} ${b.staff.last_name}`.trim()
+          : undefined,
       })) as Booking[];
     },
   });
