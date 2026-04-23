@@ -24,6 +24,14 @@ import {
 import { useParticipants } from "@/hooks/useParticipantsDb";
 import { useStaff, staffDisplayName } from "@/hooks/useStaff";
 import BookingDrawer from "@/components/BookingDrawer";
+import ScheduleDayMap from "@/components/locations/ScheduleDayMap";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const UNALLOCATED_ID = "__unallocated__";
 
@@ -86,6 +94,7 @@ export default function Schedule() {
   const [groupBy, setGroupBy] = useState<GroupBy>("worker");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerDefaultDate, setDrawerDefaultDate] = useState<Date | undefined>();
+  const [mapStaffId, setMapStaffId] = useState<string>("__all__");
 
   const { data: bookings = [] } = useBookings();
   const { data: participants = [] } = useParticipants();
@@ -235,6 +244,30 @@ export default function Schedule() {
           <DayView title="Day" />
           <WeekView title="Week" />
         </Scheduler>
+      </div>
+
+      <div className="space-y-2">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-sm font-medium text-muted-foreground">Day map</h2>
+          <div className="w-56">
+            <Select value={mapStaffId} onValueChange={setMapStaffId}>
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue placeholder="All staff (overview)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">All staff (overview)</SelectItem>
+                {staff
+                  .filter((s) => s.bookable && s.status === "active")
+                  .map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      Route — {staffDisplayName(s)}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <ScheduleDayMap date={date} staffId={mapStaffId === "__all__" ? null : mapStaffId} />
       </div>
 
       <BookingDrawer

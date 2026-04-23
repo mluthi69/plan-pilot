@@ -38,6 +38,10 @@ export interface Visit {
   exception_reason: string | null;
   created_at: string;
   updated_at: string;
+  /** Resolved location for the visit's booking (for maps + route hints). */
+  location_address: string | null;
+  end_lat: number | null;
+  end_lng: number | null;
 }
 
 export function useVisits(opts?: {
@@ -62,7 +66,7 @@ export function useVisits(opts?: {
       let q = (supabase as any)
         .from("visits")
         .select(
-          "*, participants(name, address, phone), bookings!inner(staff_bookings(role, staff:staff_id(id, first_name, last_name, preferred_name)))"
+          "*, participants(name, address, phone), bookings!inner(location_address, end_lat, end_lng, staff_bookings(role, staff:staff_id(id, first_name, last_name, preferred_name)))"
         )
         .eq("org_id", orgId)
         .order("scheduled_start", { ascending: true });
@@ -89,7 +93,7 @@ export function useVisit(id: string | undefined) {
       const { data, error } = await (supabase as any)
         .from("visits")
         .select(
-          "*, participants(name, address, phone), bookings!inner(staff_bookings(role, staff:staff_id(id, first_name, last_name, preferred_name)))"
+          "*, participants(name, address, phone), bookings!inner(location_address, end_lat, end_lng, staff_bookings(role, staff:staff_id(id, first_name, last_name, preferred_name)))"
         )
         .eq("id", id)
         .maybeSingle();
@@ -195,5 +199,8 @@ function mapVisitRow(v: any): Visit {
         }
       : null,
     staff,
+    location_address: v.bookings?.location_address ?? null,
+    end_lat: v.bookings?.end_lat ?? null,
+    end_lng: v.bookings?.end_lng ?? null,
   } as Visit;
 }
