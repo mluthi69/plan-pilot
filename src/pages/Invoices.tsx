@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { Search, Filter, Plus, Upload } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Search, Filter, Plus, Upload, FileText } from "lucide-react";
+import { useDraftInvoiceCandidates } from "@/hooks/useDraftInvoices";
 import StatusBadge, { type InvoiceStatus } from "@/components/StatusBadge";
 import { useInvoices, useInvoiceStats, useUpdateInvoiceStatus } from "@/hooks/useInvoices";
 import {
@@ -20,6 +22,7 @@ const statusTransitions: Record<string, InvoiceStatus[]> = {
 export default function Invoices() {
   const { data: invoices = [], isLoading } = useInvoices();
   const { data: stats } = useInvoiceStats();
+  const { data: drafts = [] } = useDraftInvoiceCandidates();
   const updateStatus = useUpdateInvoiceStatus();
   const [search, setSearch] = useState("");
 
@@ -38,6 +41,18 @@ export default function Invoices() {
           <p className="mt-1 text-sm text-muted-foreground">Process, validate, and approve provider invoices</p>
         </div>
         <div className="flex items-center gap-2">
+          <Link
+            to="/invoices/drafts"
+            className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-3.5 py-2 text-sm font-medium text-foreground hover:bg-secondary transition-colors"
+          >
+            <FileText className="h-4 w-4" />
+            Drafts
+            {drafts.length > 0 && (
+              <span className="rounded-full bg-warning/15 px-1.5 text-[10px] font-semibold text-warning">
+                {drafts.length}
+              </span>
+            )}
+          </Link>
           <button className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-3.5 py-2 text-sm font-medium text-foreground hover:bg-secondary transition-colors">
             <Upload className="h-4 w-4" />
             Upload

@@ -28,6 +28,7 @@ import Exceptions from "./pages/Exceptions";
 import Documents from "./pages/Documents";
 import Reports from "./pages/Reports";
 import Invoices from "./pages/Invoices";
+import InvoiceDrafts from "./pages/InvoiceDrafts";
 import SignInPage from "./pages/SignIn";
 import SignUpPage from "./pages/SignUp";
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -92,6 +93,7 @@ const App = () => (
               <Route path="/participants/:id" element={<ParticipantDetail />} />
               <Route path="/agreements" element={<Agreements />} />
               <Route path="/invoices" element={<Invoices />} />
+              <Route path="/invoices/drafts" element={<InvoiceDrafts />} />
               <Route path="/exceptions" element={<Exceptions />} />
               <Route path="/documents" element={<Documents />} />
               <Route path="/reports" element={<Reports />} />
