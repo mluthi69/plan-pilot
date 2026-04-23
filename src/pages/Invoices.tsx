@@ -160,6 +160,17 @@ export default function Invoices() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-xs text-muted-foreground">
+                  <th className="w-8 px-3 py-2.5">
+                    <input
+                      type="checkbox"
+                      checked={approvedReady.length > 0 && approvedReady.every((i) => selected.has(i.id))}
+                      onChange={(e) => {
+                        if (e.target.checked) setSelected(new Set(approvedReady.map((i) => i.id)));
+                        else setSelected(new Set());
+                      }}
+                      disabled={!isFinance || approvedReady.length === 0}
+                    />
+                  </th>
                   <th className="px-5 py-2.5 text-left font-medium">Invoice</th>
                   <th className="px-5 py-2.5 text-left font-medium">Provider</th>
                   <th className="px-5 py-2.5 text-left font-medium">Participant</th>
@@ -173,6 +184,18 @@ export default function Invoices() {
               <tbody>
                 {filtered.map((inv) => (
                   <tr key={inv.id} className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
+                    <td className="px-3 py-3">
+                      {inv.status === "approved" ? (
+                        <input
+                          type="checkbox"
+                          checked={selected.has(inv.id)}
+                          onChange={() => toggle(inv.id)}
+                          disabled={!isFinance}
+                        />
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground/60">—</span>
+                      )}
+                    </td>
                     <td className="px-5 py-3 font-mono text-xs font-medium text-card-foreground">{inv.invoice_number}</td>
                     <td className="px-5 py-3 text-card-foreground">{inv.provider_name ?? "—"}</td>
                     <td className="px-5 py-3 text-muted-foreground">{inv.participant_name ?? "—"}</td>
@@ -183,7 +206,17 @@ export default function Invoices() {
                     <td className="px-5 py-3"><StatusBadge status={inv.status} /></td>
                     <td className="px-5 py-3 text-xs text-muted-foreground">{new Date(inv.received_at).toLocaleDateString("en-AU")}</td>
                     <td className="px-5 py-3">
-                      {statusTransitions[inv.status] ? (
+                      {inv.status === "pending" ? (
+                        isFinance ? (
+                          <Button size="sm" className="h-7 text-xs" onClick={() => approve(inv.id)}>
+                            Approve
+                          </Button>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+                            <Lock className="h-3 w-3" /> Finance approval
+                          </span>
+                        )
+                      ) : statusTransitions[inv.status] ? (
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="outline" size="sm" className="h-7 text-xs">

@@ -10,6 +10,9 @@ import { useProviderInvoices } from "@/hooks/useInvoices";
 import { useProviderContracts } from "@/hooks/useContracts";
 import { useEntityActivity } from "@/hooks/useActivityLog";
 import ProviderFormDialog from "@/components/ProviderFormDialog";
+import { useProviderStats } from "@/hooks/useProviderStats";
+import { checkAbn } from "@/lib/abn";
+import { TrendingUp, DollarSign, Receipt, AlertTriangle, CheckCircle2, AlertCircle } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,6 +43,7 @@ export default function ProviderDetail() {
   const { data: invoices = [] } = useProviderInvoices(id);
   const { data: contracts = [] } = useProviderContracts(id);
   const { data: activity = [] } = useEntityActivity("provider", id);
+  const { data: stats } = useProviderStats(id);
   const deleteProvider = useDeleteProvider();
   const [showEdit, setShowEdit] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
