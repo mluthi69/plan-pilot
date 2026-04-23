@@ -246,6 +246,30 @@ export default function Schedule() {
         </Scheduler>
       </div>
 
+      <div className="space-y-2">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-sm font-medium text-muted-foreground">Day map</h2>
+          <div className="w-56">
+            <Select value={mapStaffId} onValueChange={setMapStaffId}>
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue placeholder="All staff (overview)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">All staff (overview)</SelectItem>
+                {staff
+                  .filter((s) => s.bookable && s.status === "active")
+                  .map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      Route — {staffDisplayName(s)}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <ScheduleDayMap date={date} staffId={mapStaffId === "__all__" ? null : mapStaffId} />
+      </div>
+
       <BookingDrawer
         open={drawerOpen}
         onOpenChange={(o) => {
