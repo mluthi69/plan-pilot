@@ -95,13 +95,26 @@ export function useCreateBooking() {
   return useMutation({
     mutationFn: async (input: BookingInput) => {
       if (!orgId) throw new Error("No organization");
+      const { staff_ids, ...bookingFields } = input;
       // Insert booking + matching visit in one batch.
       const { data: booking, error } = await (supabase as any)
         .from("bookings")
-        .insert({ ...input, org_id: orgId })
+        .insert({ ...bookingFields, org_id: orgId })
         .select()
         .single();
       if (error) throw error;
+
+      // Attach assigned staff via the link table (many-to-many).
+      if (staff_ids && staff_ids.length) {
+        const rows = staff_ids.map((sid, i) => ({
+          org_id: orgId,
+          booking_id: booking.id,
+          staff_id: sid,
+          role: i === 0 ? "primary" : "support",
+        }));
+        const { error: linkErr } = await (supabase as any).from("staff_bookings").insert(rows);
+        if (linkErr) throw linkErr;
+      }
 
       const { error: visitErr } = await (supabase as any).from("visits").insert({
         org_id: orgId,
