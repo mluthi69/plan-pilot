@@ -1,0 +1,64 @@
+/* Kendo Default theme + overrides mapping to our slate-navy/teal design tokens */
+@import "@progress/kendo-theme-default/dist/all.css";
+
+:root {
+  /* Map Kendo CSS variables to our shadcn semantic tokens */
+  --kendo-color-primary: hsl(var(--primary));
+  --kendo-color-primary-hover: hsl(var(--primary) / 0.9);
+  --kendo-color-primary-active: hsl(var(--primary) / 0.85);
+  --kendo-color-primary-emphasis: hsl(var(--primary));
+  --kendo-color-primary-on-surface: hsl(var(--primary));
+
+  --kendo-color-base: hsl(var(--card));
+  --kendo-color-base-hover: hsl(var(--secondary));
+  --kendo-color-base-active: hsl(var(--secondary));
+  --kendo-color-base-emphasis: hsl(var(--border));
+  --kendo-color-on-base: hsl(var(--foreground));
+
+  --kendo-color-surface: hsl(var(--background));
+  --kendo-color-surface-alt: hsl(var(--card));
+  --kendo-color-on-surface: hsl(var(--foreground));
+
+  --kendo-color-border: hsl(var(--border));
+  --kendo-color-border-alt: hsl(var(--border));
+
+  --kendo-color-info: hsl(var(--info, var(--primary)));
+  --kendo-color-success: hsl(var(--success, 142 71% 45%));
+  --kendo-color-warning: hsl(var(--warning, 38 92% 50%));
+  --kendo-color-error: hsl(var(--destructive));
+
+  --kendo-font-family: var(--font-sans, "Inter", system-ui, sans-serif);
+  --kendo-border-radius-md: var(--radius);
+}
+
+/* Scheduler-specific tweaks */
+.k-scheduler {
+  font-family: var(--kendo-font-family);
+  border-radius: var(--radius);
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--card));
+}
+
+.k-scheduler .k-scheduler-toolbar {
+  background: hsl(var(--card));
+  border-bottom: 1px solid hsl(var(--border));
+}
+
+.k-event {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  border: none;
+  border-radius: calc(var(--radius) - 2px);
+  font-weight: 500;
+}
+
+.k-event:hover {
+  background: hsl(var(--primary) / 0.9);
+}
+
+/* Status-tinted events */
+.k-event.evt-confirmed { background: hsl(var(--accent)); color: hsl(var(--accent-foreground)); }
+.k-event.evt-in_progress { background: hsl(var(--warning, 38 92% 50%)); color: hsl(var(--background)); }
+.k-event.evt-completed { background: hsl(var(--success, 142 71% 45%)); color: hsl(var(--background)); }
+.k-event.evt-cancelled { background: hsl(var(--muted)); color: hsl(var(--muted-foreground)); text-decoration: line-through; }
+.k-event.evt-no_show { background: hsl(var(--destructive)); color: hsl(var(--destructive-foreground)); }

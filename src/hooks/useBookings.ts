@@ -138,3 +138,55 @@ export function useUpdateBookingStatus() {
     onError: (e: any) => toast.error(e.message ?? "Failed to update booking"),
   });
 }
+
+/**
+ * Generic patch update for a booking (used by drag/resize/reassign in
+ * the Scheduler view). Mirrors changes onto the linked visit so
+ * downstream views stay consistent.
+ */
+export function useUpdateBooking() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      patch,
+    }: {
+      id: string;
+      patch: Partial<
+        Pick<
+          Booking,
+          | "starts_at"
+          | "ends_at"
+          | "assigned_worker_id"
+          | "assigned_worker_name"
+          | "participant_id"
+          | "service_type"
+          | "location"
+          | "notes"
+        >
+      >;
+    }) => {
+      const { error } = await (supabase as any)
+        .from("bookings")
+        .update(patch)
+        .eq("id", id);
+      if (error) throw error;
+
+      // Mirror schedule + worker changes onto the linked visit.
+      const visitPatch: any = {};
+      if (patch.starts_at) visitPatch.scheduled_start = patch.starts_at;
+      if (patch.ends_at) visitPatch.scheduled_end = patch.ends_at;
+      if (patch.assigned_worker_id !== undefined) visitPatch.worker_id = patch.assigned_worker_id;
+      if (patch.assigned_worker_name !== undefined) visitPatch.worker_name = patch.assigned_worker_name;
+      if (Object.keys(visitPatch).length) {
+        await (supabase as any).from("visits").update(visitPatch).eq("booking_id", id);
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["bookings"] });
+      qc.invalidateQueries({ queryKey: ["visits"] });
+      toast.success("Booking updated");
+    },
+    onError: (e: any) => toast.error(e.message ?? "Failed to update booking"),
+  });
+}
