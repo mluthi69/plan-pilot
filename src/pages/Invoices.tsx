@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Search, Filter, Plus, Upload, FileText } from "lucide-react";
+import { Search, Filter, Plus, Upload, FileText, Download, Lock } from "lucide-react";
 import { useDraftInvoiceCandidates } from "@/hooks/useDraftInvoices";
 import StatusBadge, { type InvoiceStatus } from "@/components/StatusBadge";
 import { useInvoices, useInvoiceStats, useUpdateInvoiceStatus } from "@/hooks/useInvoices";
@@ -11,6 +11,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { useUserRole } from "@/hooks/useUserRole";
+import { buildClaimCsv, downloadCsv } from "@/lib/claimExport";
+import { useUser } from "@clerk/clerk-react";
+import { toast } from "sonner";
 
 const statusTransitions: Record<string, InvoiceStatus[]> = {
   pending: ["approved", "rejected"],
@@ -20,11 +24,14 @@ const statusTransitions: Record<string, InvoiceStatus[]> = {
 };
 
 export default function Invoices() {
+  const { isFinance, role } = useUserRole();
+  const { user } = useUser();
   const { data: invoices = [], isLoading } = useInvoices();
   const { data: stats } = useInvoiceStats();
   const { data: drafts = [] } = useDraftInvoiceCandidates();
   const updateStatus = useUpdateInvoiceStatus();
   const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const filtered = invoices.filter(
     (inv) =>
@@ -32,6 +39,38 @@ export default function Invoices() {
       (inv.provider_name ?? "").toLowerCase().includes(search.toLowerCase()) ||
       (inv.participant_name ?? "").toLowerCase().includes(search.toLowerCase())
   );
+
+  const approvedReady = filtered.filter((i) => i.status === "approved");
+
+  function toggle(id: string) {
+    setSelected((s) => {
+      const next = new Set(s);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  function exportSelected() {
+    const rows = approvedReady
+      .filter((i) => selected.has(i.id))
+      .map((inv) => ({ invoice: inv, registrationNumber: null, supportNumber: null }));
+    if (rows.length === 0) {
+      toast.error("Select at least one approved invoice");
+      return;
+    }
+    const csv = buildClaimCsv(rows);
+    const stamp = new Date().toISOString().slice(0, 10);
+    downloadCsv(`ndia-bulk-claim-${stamp}.csv`, csv);
+    toast.success(`Exported ${rows.length} claim line${rows.length === 1 ? "" : "s"}`);
+  }
+
+  function approve(id: string) {
+    updateStatus.mutate({
+      id,
+      status: "approved",
+      approved_by: user?.fullName ?? user?.primaryEmailAddress?.emailAddress ?? "Finance",
+    });
+  }
 
   return (
     <div className="space-y-6">
@@ -53,6 +92,16 @@ export default function Invoices() {
               </span>
             )}
           </Link>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={exportSelected}
+            disabled={!isFinance || selected.size === 0}
+            title={isFinance ? "Export selected approved invoices as NDIA bulk CSV" : "Finance role required"}
+          >
+            <Download className="mr-1.5 h-4 w-4" />
+            Export NDIA bulk ({selected.size})
+          </Button>
           <button className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-3.5 py-2 text-sm font-medium text-foreground hover:bg-secondary transition-colors">
             <Upload className="h-4 w-4" />
             Upload
