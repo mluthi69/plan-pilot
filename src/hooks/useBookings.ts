@@ -18,8 +18,9 @@ export interface Booking {
   participant_name?: string;
   assigned_worker_id: string | null;
   assigned_worker_name: string | null;
-  staff_id: string | null;
-  staff_name?: string;
+  /** All assigned staff (many-to-many via staff_bookings). */
+  staff_ids: string[];
+  staff_names: string[];
   support_category: string | null;
   location_address: string | null;
   location_source: "participant" | "override";
@@ -39,7 +40,8 @@ export interface BookingInput {
   participant_id: string;
   assigned_worker_id?: string | null;
   assigned_worker_name?: string | null;
-  staff_id?: string | null;
+  /** Optional list of staff to attach when creating the booking. */
+  staff_ids?: string[];
   support_category?: string | null;
   location_address?: string | null;
   location_source?: "participant" | "override";
