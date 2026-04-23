@@ -199,5 +199,8 @@ function mapVisitRow(v: any): Visit {
         }
       : null,
     staff,
+    location_address: v.bookings?.location_address ?? null,
+    end_lat: v.bookings?.end_lat ?? null,
+    end_lng: v.bookings?.end_lng ?? null,
   } as Visit;
 }
