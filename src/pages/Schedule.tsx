@@ -24,6 +24,14 @@ import {
 import { useParticipants } from "@/hooks/useParticipantsDb";
 import { useStaff, staffDisplayName } from "@/hooks/useStaff";
 import BookingDrawer from "@/components/BookingDrawer";
+import ScheduleDayMap from "@/components/locations/ScheduleDayMap";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const UNALLOCATED_ID = "__unallocated__";
 
@@ -86,6 +94,7 @@ export default function Schedule() {
   const [groupBy, setGroupBy] = useState<GroupBy>("worker");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerDefaultDate, setDrawerDefaultDate] = useState<Date | undefined>();
+  const [mapStaffId, setMapStaffId] = useState<string>("__all__");
 
   const { data: bookings = [] } = useBookings();
   const { data: participants = [] } = useParticipants();
