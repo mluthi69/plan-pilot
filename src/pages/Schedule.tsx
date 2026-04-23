@@ -160,22 +160,13 @@ export default function Schedule() {
         starts_at: ev.start.toISOString(),
         ends_at: ev.end.toISOString(),
       };
-      // Drag across worker rows reassigns the booking
-      if (groupBy === "worker" && ev.workerId !== ev.raw.assigned_worker_id) {
-        const target = workerResources.find((w) => w.value === ev.workerId);
-        if (ev.workerId === UNALLOCATED_ID) {
-          patch.assigned_worker_id = null;
-          patch.assigned_worker_name = null;
-        } else if (target) {
-          patch.assigned_worker_id = ev.workerId;
-          patch.assigned_worker_name = target.text;
-        }
-      }
+      // NOTE: drag across worker lanes no longer reassigns, because a booking
+      // can have many staff. Use the booking drawer to manage the staff list.
       // Drag across participant rows reassigns the booking's participant
       if (groupBy === "participant" && ev.participantId !== ev.raw.participant_id) {
         patch.participant_id = ev.participantId;
       }
-      updateBooking.mutate({ id: ev.id, patch });
+      updateBooking.mutate({ id: ev.bookingId, patch });
     }
     // (Create/remove come through this event too — we route create to the drawer
     // for a richer form, and ignore in-Scheduler delete to keep the audit trail clean.)
