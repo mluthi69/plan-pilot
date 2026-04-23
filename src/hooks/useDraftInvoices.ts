@@ -16,7 +16,7 @@ export interface DraftCandidate {
   scheduled_end: string;
   actual_start: string | null;
   actual_end: string | null;
-  worker_name: string | null;
+  staff_names: string[];
   notes_submitted: boolean;
   participant_signed: boolean;
   agreement_id: string | null;
@@ -43,7 +43,9 @@ export function useDraftInvoiceCandidates() {
       const [visitsRes, agreementsRes] = await Promise.all([
         (supabase as any)
           .from("visits")
-          .select("*, participants(name)")
+          .select(
+            "*, participants(name), bookings!inner(staff_bookings(staff:staff_id(first_name, last_name, preferred_name)))"
+          )
           .eq("org_id", orgId)
           .eq("status", "completed")
           .order("actual_end", { ascending: false }),
@@ -78,6 +80,14 @@ export function useDraftInvoiceCandidates() {
         if (hours <= 0) warnings.push("Visit duration is zero");
         if (!firstItem?.unit_price) warnings.push("Agreement has no priced items");
 
+        const sb: Array<{ staff: any }> = v.bookings?.staff_bookings ?? [];
+        const staff_names = sb
+          .filter((row) => row.staff)
+          .map((row) => {
+            const first = row.staff.preferred_name?.trim() || row.staff.first_name;
+            return `${first} ${row.staff.last_name}`.trim();
+          });
+
         return {
           visit_id: v.id,
           participant_id: v.participant_id,
@@ -86,7 +96,7 @@ export function useDraftInvoiceCandidates() {
           scheduled_end: v.scheduled_end,
           actual_start: v.actual_start,
           actual_end: v.actual_end,
-          worker_name: v.worker_name,
+          staff_names,
           notes_submitted: v.notes_submitted,
           participant_signed: v.participant_signed,
           agreement_id: agreement?.id ?? null,
