@@ -1,45 +1,58 @@
 import { NavLink } from "react-router-dom";
 import { OrganizationSwitcher, UserButton } from "@clerk/clerk-react";
 import { useSystemAdmin } from "@/hooks/useSystemAdmin";
+import { useUserRole, type AppRole } from "@/hooks/useUserRole";
 import {
   LayoutDashboard,
+  Calendar,
   Users,
-  ClipboardList,
+  ClipboardCheck,
+  FileSignature,
+  Receipt,
+  AlertTriangle,
+  FolderOpen,
+  BarChart3,
   Settings,
-  Bell,
-  Zap,
-  BookOpen,
-  Building2,
   Search,
   Shield,
+  Plus,
 } from "lucide-react";
 
-const navSections = [
+type NavItem = {
+  to: string;
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  roles?: AppRole[]; // visible to (in addition to owner, who always sees all)
+};
+
+const navSections: { label: string; items: NavItem[] }[] = [
   {
-    label: "Overview",
+    label: "Today",
     items: [
       { to: "/", icon: LayoutDashboard, label: "Dashboard" },
+      { to: "/schedule", icon: Calendar, label: "Schedule", roles: ["coordinator"] },
+      { to: "/visits", icon: ClipboardCheck, label: "Visits" },
+    ],
+  },
+  {
+    label: "People",
+    items: [
+      { to: "/participants", icon: Users, label: "Participants" },
     ],
   },
   {
     label: "Operations",
     items: [
-      { to: "/participants", icon: Users, label: "Participants" },
-      { to: "/providers", icon: Building2, label: "Providers" },
+      { to: "/agreements", icon: FileSignature, label: "Agreements", roles: ["coordinator", "finance"] },
+      { to: "/invoices", icon: Receipt, label: "Invoices", roles: ["finance"] },
+      { to: "/exceptions", icon: AlertTriangle, label: "Exceptions", roles: ["coordinator", "finance"] },
     ],
   },
   {
-    label: "Coordination",
+    label: "Workspace",
     items: [
-      { to: "/tasks", icon: ClipboardList, label: "Tasks & Notes" },
-      { to: "/price-guide", icon: BookOpen, label: "Price Guide" },
-    ],
-  },
-  {
-    label: "Platform",
-    items: [
-      { to: "/automations", icon: Zap, label: "Automations" },
-      { to: "/notifications", icon: Bell, label: "Notifications" },
+      { to: "/documents", icon: FolderOpen, label: "Documents" },
+      { to: "/reports", icon: BarChart3, label: "Reports", roles: ["coordinator", "finance"] },
       { to: "/settings", icon: Settings, label: "Settings" },
     ],
   },
@@ -51,6 +64,16 @@ interface AppSidebarProps {
 
 export default function AppSidebar({ onNavigate }: AppSidebarProps) {
   const { isSystemAdmin } = useSystemAdmin();
+  const { role } = useUserRole();
+
+  const visibleSections = navSections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter(
+        (it) => !it.roles || role === "owner" || it.roles.includes(role),
+      ),
+    }))
+    .filter((s) => s.items.length > 0);
 
   return (
     <aside className="flex h-screen w-60 flex-col bg-sidebar text-sidebar-foreground shrink-0 sticky top-0">
@@ -88,9 +111,23 @@ export default function AppSidebar({ onNavigate }: AppSidebarProps) {
         </div>
       </div>
 
+      {/* Quick create */}
+      {role !== "support_worker" && (
+        <div className="mx-3 mt-2">
+          <NavLink
+            to="/schedule?create=1"
+            onClick={onNavigate}
+            className="flex items-center justify-center gap-2 rounded-md bg-sidebar-primary px-2 py-1.5 text-xs font-semibold text-sidebar-primary-foreground hover:opacity-90 transition-opacity"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            New booking
+          </NavLink>
+        </div>
+      )}
+
       {/* Nav */}
       <nav className="mt-4 flex-1 overflow-y-auto px-3 pb-4">
-        {navSections.map((section) => (
+        {visibleSections.map((section) => (
           <div key={section.label} className="mb-4">
             <p className="mb-1 px-2 text-[10px] font-semibold uppercase tracking-wider text-sidebar-muted">
               {section.label}

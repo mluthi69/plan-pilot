@@ -1,135 +1,175 @@
-import MetricCard from "@/components/MetricCard";
-import StatusBadge from "@/components/StatusBadge";
-import { useDashboardStats } from "@/hooks/useDashboardStats";
-import { useInvoices } from "@/hooks/useInvoices";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-} from "recharts";
+import { Link, useNavigate } from "react-router-dom";
+import { useUser } from "@clerk/clerk-react";
+import { useUserRole } from "@/hooks/useUserRole";
+import { useVisits } from "@/hooks/useVisits";
+import { useBookings } from "@/hooks/useBookings";
+import { useAgreements } from "@/hooks/useAgreements";
+import { Calendar, ClipboardCheck, AlertTriangle, FileSignature, Plus, ArrowRight, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-const pieData = [
-  { name: "Core", value: 45, color: "hsl(174, 62%, 38%)" },
-  { name: "Capacity Building", value: 30, color: "hsl(215, 50%, 23%)" },
-  { name: "Capital", value: 15, color: "hsl(38, 92%, 50%)" },
-  { name: "Recurring", value: 10, color: "hsl(205, 78%, 56%)" },
-];
+function startOfDay(d: Date) { const x = new Date(d); x.setHours(0,0,0,0); return x; }
+function endOfDay(d: Date) { const x = new Date(d); x.setHours(23,59,59,999); return x; }
 
 export default function Dashboard() {
-  const { data: stats } = useDashboardStats();
-  const { data: invoices = [] } = useInvoices();
-  const recentInvoices = invoices.slice(0, 5);
+  const navigate = useNavigate();
+  const { user } = useUser();
+  const { isSupportWorker, role } = useUserRole();
 
-  const fmt = (n: number) =>
-    n >= 1000 ? `$${(n / 1000).toFixed(1)}k` : `$${n.toLocaleString("en-AU")}`;
+  const today = new Date();
+  const { data: todayVisits = [] } = useVisits({
+    from: startOfDay(today).toISOString(),
+    to: endOfDay(today).toISOString(),
+  });
+  const { data: weekBookings = [] } = useBookings({
+    from: startOfDay(today).toISOString(),
+    to: new Date(today.getTime() + 7 * 86400000).toISOString(),
+  });
+  const { data: agreements = [] } = useAgreements();
+
+  // Alert builders
+  const unsubmittedNotes = todayVisits.filter((v) => v.status === "completed" && !v.notes_submitted);
+  const unsignedVisits = todayVisits.filter((v) => v.status === "completed" && !v.participant_signed);
+  const unallocated = weekBookings.filter((b) => !b.assigned_worker_name);
+  const expiringAgreements = agreements.filter((a) => {
+    if (a.status !== "active") return false;
+    const days = (new Date(a.end_date).getTime() - today.getTime()) / 86400000;
+    return days <= 30 && days >= 0;
+  });
+
+  const greeting = (() => {
+    const h = today.getHours();
+    if (h < 12) return "Good morning";
+    if (h < 18) return "Good afternoon";
+    return "Good evening";
+  })();
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-semibold">Dashboard</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Overview of your plan management operations</p>
+      <header className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">
+            {today.toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" })}
+          </p>
+          <h1 className="mt-0.5 text-2xl font-semibold">
+            {greeting}{user?.firstName ? `, ${user.firstName}` : ""}.
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Here's what needs attention today.
+          </p>
+        </div>
+        {!isSupportWorker && (
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => navigate("/schedule")}>
+              <Calendar className="mr-1.5 h-4 w-4" /> Open schedule
+            </Button>
+            <Button onClick={() => navigate("/schedule?create=1")}>
+              <Plus className="mr-1.5 h-4 w-4" /> New booking
+            </Button>
+          </div>
+        )}
+      </header>
+
+      {/* Snapshot tiles */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <SnapshotTile label="Today's visits" value={todayVisits.length} icon={ClipboardCheck} to="/visits" />
+        <SnapshotTile label="Unsubmitted notes" value={unsubmittedNotes.length} icon={ClipboardCheck} tone={unsubmittedNotes.length > 0 ? "warn" : "ok"} to="/visits" />
+        <SnapshotTile label="Unallocated this week" value={unallocated.length} icon={Calendar} tone={unallocated.length > 0 ? "warn" : "ok"} to="/schedule" />
+        <SnapshotTile label="Expiring agreements" value={expiringAgreements.length} icon={FileSignature} tone={expiringAgreements.length > 0 ? "warn" : "ok"} to="/agreements" />
       </div>
 
-      {/* Metrics */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <MetricCard title="Active Participants" value={stats?.activeParticipants?.toLocaleString() ?? "—"} subtitle="currently active" />
-        <MetricCard title="Invoices This Month" value={stats?.totalInvoicesThisMonth?.toLocaleString() ?? "—"} subtitle="this month" />
-        <MetricCard title="Pending Approvals" value={stats?.pendingApprovals?.toLocaleString() ?? "—"} subtitle="awaiting action" />
-        <MetricCard title="Total Claimed" value={stats ? fmt(stats.totalClaimedThisMonth) : "—"} subtitle="this month" />
-      </div>
-
-      {/* Charts */}
       <div className="grid gap-4 lg:grid-cols-3">
-        <div className="col-span-2 rounded-lg border border-border bg-card p-5">
-          <h3 className="text-sm font-medium text-card-foreground">Budget Allocation</h3>
-          <p className="mt-0.5 text-xs text-muted-foreground">By support category</p>
-          <div className="mt-4 h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={pieData} barSize={40}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(214, 20%, 90%)" />
-                <XAxis dataKey="name" tick={{ fontSize: 12, fill: "hsl(215, 14%, 46%)" }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 12, fill: "hsl(215, 14%, 46%)" }} axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid hsl(214, 20%, 90%)", fontSize: 12 }} />
-                <Bar dataKey="value" fill="hsl(174, 62%, 38%)" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+        {/* Today's visits */}
+        <section className="lg:col-span-2 rounded-lg border border-border bg-card">
+          <div className="flex items-center justify-between border-b border-border px-4 py-3">
+            <h2 className="text-sm font-semibold">Today's visits</h2>
+            <Link to="/visits" className="text-xs font-medium text-accent hover:underline inline-flex items-center gap-1">
+              All visits <ArrowRight className="h-3 w-3" />
+            </Link>
           </div>
-        </div>
-
-        <div className="rounded-lg border border-border bg-card p-5">
-          <h3 className="text-sm font-medium text-card-foreground">Category Split</h3>
-          <p className="mt-0.5 text-xs text-muted-foreground">Percentage breakdown</p>
-          <div className="mt-4 h-48">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={pieData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} dataKey="value" strokeWidth={2} stroke="hsl(0, 0%, 100%)">
-                  {pieData.map((entry, i) => (
-                    <Cell key={i} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid hsl(214, 20%, 90%)", fontSize: 12 }} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="mt-2 space-y-1.5">
-            {pieData.map((d) => (
-              <div key={d.name} className="flex items-center gap-2 text-xs">
-                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: d.color }} />
-                <span className="text-muted-foreground">{d.name}</span>
-                <span className="ml-auto font-medium text-card-foreground">{d.value}%</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Recent invoices */}
-      <div className="rounded-lg border border-border bg-card">
-        <div className="flex items-center justify-between border-b border-border px-5 py-3">
-          <h3 className="text-sm font-medium text-card-foreground">Recent Invoices</h3>
-          <a href="/invoices" className="text-xs font-medium text-accent hover:underline">View all</a>
-        </div>
-        <div className="overflow-x-auto">
-          {recentInvoices.length === 0 ? (
-            <div className="py-8 text-center text-sm text-muted-foreground">No invoices yet</div>
+          {todayVisits.length === 0 ? (
+            <div className="px-4 py-8 text-center text-sm text-muted-foreground">No visits scheduled today.</div>
           ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border text-xs text-muted-foreground">
-                  <th className="px-5 py-2.5 text-left font-medium">Invoice</th>
-                  <th className="px-5 py-2.5 text-left font-medium">Provider</th>
-                  <th className="px-5 py-2.5 text-left font-medium">Participant</th>
-                  <th className="px-5 py-2.5 text-right font-medium">Amount</th>
-                  <th className="px-5 py-2.5 text-left font-medium">Status</th>
-                  <th className="px-5 py-2.5 text-left font-medium">Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentInvoices.map((inv) => (
-                  <tr key={inv.id} className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
-                    <td className="px-5 py-3 font-mono text-xs font-medium text-card-foreground">{inv.invoice_number}</td>
-                    <td className="px-5 py-3 text-card-foreground">{inv.provider_name ?? "—"}</td>
-                    <td className="px-5 py-3 text-muted-foreground">{inv.participant_name ?? "—"}</td>
-                    <td className="px-5 py-3 text-right font-medium text-card-foreground">
-                      ${Number(inv.amount).toLocaleString("en-AU", { minimumFractionDigits: 2 })}
-                    </td>
-                    <td className="px-5 py-3"><StatusBadge status={inv.status} /></td>
-                    <td className="px-5 py-3 text-xs text-muted-foreground">{new Date(inv.received_at).toLocaleDateString("en-AU")}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <ul className="divide-y divide-border">
+              {todayVisits.slice(0, 6).map((v) => (
+                <li key={v.id} className="flex items-center gap-3 px-4 py-2.5 text-sm">
+                  <div className="w-16 font-mono text-xs text-muted-foreground">
+                    <Clock className="mb-0.5 h-3 w-3" />
+                    {new Date(v.scheduled_start).toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit" })}
+                  </div>
+                  <Link to={`/visits/${v.id}`} className="flex-1 hover:underline">
+                    <span className="font-medium">{v.participant_name ?? "—"}</span>
+                    <span className="ml-2 text-xs text-muted-foreground">· {v.worker_name ?? "Unallocated"}</span>
+                  </Link>
+                  <span className="text-[11px] capitalize text-muted-foreground">{v.status.replace("_", " ")}</span>
+                </li>
+              ))}
+            </ul>
           )}
-        </div>
+        </section>
+
+        {/* Alerts */}
+        <section className="rounded-lg border border-border bg-card">
+          <div className="flex items-center justify-between border-b border-border px-4 py-3">
+            <h2 className="text-sm font-semibold">Alerts</h2>
+            <Link to="/exceptions" className="text-xs font-medium text-accent hover:underline">All</Link>
+          </div>
+          <ul className="divide-y divide-border">
+            <AlertRow show={unsubmittedNotes.length > 0} icon={AlertTriangle} tone="warn"
+              text={`${unsubmittedNotes.length} completed visit${unsubmittedNotes.length === 1 ? "" : "s"} without a note`}
+              to="/visits"
+            />
+            <AlertRow show={unsignedVisits.length > 0} icon={AlertTriangle} tone="warn"
+              text={`${unsignedVisits.length} visit${unsignedVisits.length === 1 ? "" : "s"} unsigned by participant`}
+              to="/visits"
+            />
+            <AlertRow show={unallocated.length > 0} icon={Calendar} tone="warn"
+              text={`${unallocated.length} unallocated booking${unallocated.length === 1 ? "" : "s"} this week`}
+              to="/schedule"
+            />
+            <AlertRow show={expiringAgreements.length > 0} icon={FileSignature} tone="warn"
+              text={`${expiringAgreements.length} agreement${expiringAgreements.length === 1 ? "" : "s"} expiring within 30 days`}
+              to="/agreements"
+            />
+          </ul>
+          {unsubmittedNotes.length === 0 && unsignedVisits.length === 0 && unallocated.length === 0 && expiringAgreements.length === 0 && (
+            <div className="px-4 py-8 text-center text-sm text-muted-foreground">All clear. 🎉</div>
+          )}
+        </section>
       </div>
     </div>
+  );
+}
+
+function SnapshotTile({ label, value, icon: Icon, to, tone = "ok" }: {
+  label: string; value: number; icon: any; to: string; tone?: "ok" | "warn";
+}) {
+  return (
+    <Link
+      to={to}
+      className="group rounded-lg border border-border bg-card p-4 transition-shadow hover:shadow-sm"
+    >
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-medium text-muted-foreground">{label}</span>
+        <Icon className={`h-4 w-4 ${tone === "warn" ? "text-warning-foreground" : "text-muted-foreground"}`} />
+      </div>
+      <p className={`mt-2 text-2xl font-semibold ${tone === "warn" && value > 0 ? "text-destructive" : "text-foreground"}`}>
+        {value}
+      </p>
+    </Link>
+  );
+}
+
+function AlertRow({ show, icon: Icon, text, to, tone }: {
+  show: boolean; icon: any; text: string; to: string; tone: "warn" | "info";
+}) {
+  if (!show) return null;
+  return (
+    <li>
+      <Link to={to} className="flex items-start gap-2 px-4 py-2.5 text-sm hover:bg-muted/50">
+        <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${tone === "warn" ? "text-warning-foreground" : "text-info"}`} />
+        <span className="text-foreground">{text}</span>
+        <ArrowRight className="ml-auto mt-0.5 h-3.5 w-3.5 text-muted-foreground" />
+      </Link>
+    </li>
   );
 }

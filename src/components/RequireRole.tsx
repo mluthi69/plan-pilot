@@ -1,15 +1,15 @@
-import { useOrganization } from "@clerk/clerk-react";
 import { Navigate } from "react-router-dom";
 import type { ReactNode } from "react";
+import { useUserRole, hasAnyRole, type AppRole } from "@/hooks/useUserRole";
 
 interface RequireRoleProps {
-  allowedRoles: string[];
+  allowedRoles: AppRole[];
   children: ReactNode;
   fallback?: ReactNode;
 }
 
 export default function RequireRole({ allowedRoles, children, fallback }: RequireRoleProps) {
-  const { membership, isLoaded } = useOrganization();
+  const { role, isLoaded } = useUserRole();
 
   if (!isLoaded) {
     return (
@@ -19,9 +19,7 @@ export default function RequireRole({ allowedRoles, children, fallback }: Requir
     );
   }
 
-  const userRole = membership?.role ?? "";
-
-  if (!allowedRoles.includes(userRole)) {
+  if (!hasAnyRole(role, allowedRoles)) {
     return fallback ? <>{fallback}</> : <Navigate to="/" replace />;
   }
 

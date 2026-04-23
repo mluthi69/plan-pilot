@@ -19,6 +19,15 @@ import Automations from "./pages/Automations";
 import Notifications from "./pages/Notifications";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+import Schedule from "./pages/Schedule";
+import Visits from "./pages/Visits";
+import VisitDetail from "./pages/VisitDetail";
+import MyDay from "./pages/MyDay";
+import Agreements from "./pages/Agreements";
+import Exceptions from "./pages/Exceptions";
+import Documents from "./pages/Documents";
+import Reports from "./pages/Reports";
+import Invoices from "./pages/Invoices";
 import SignInPage from "./pages/SignIn";
 import SignUpPage from "./pages/SignUp";
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -75,8 +84,17 @@ const App = () => (
               }
             >
               <Route path="/" element={<Dashboard />} />
+              <Route path="/schedule" element={<Schedule />} />
+              <Route path="/visits" element={<Visits />} />
+              <Route path="/visits/:id" element={<VisitDetail />} />
+              <Route path="/my-day" element={<MyDay />} />
               <Route path="/participants" element={<Participants />} />
               <Route path="/participants/:id" element={<ParticipantDetail />} />
+              <Route path="/agreements" element={<Agreements />} />
+              <Route path="/invoices" element={<Invoices />} />
+              <Route path="/exceptions" element={<Exceptions />} />
+              <Route path="/documents" element={<Documents />} />
+              <Route path="/reports" element={<Reports />} />
               <Route path="/providers" element={<Providers />} />
               <Route path="/providers/:id" element={<ProviderDetail />} />
               <Route path="/tasks" element={<TasksAndNotes />} />
