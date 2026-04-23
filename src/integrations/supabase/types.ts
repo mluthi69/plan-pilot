@@ -108,18 +108,89 @@ export type Database = {
           },
         ]
       }
+      booking_travel_lines: {
+        Row: {
+          amount: number
+          booking_id: string
+          created_at: string
+          id: string
+          kilometres: number
+          line_type: string
+          minutes: number
+          mmm_zone: string | null
+          notes: string | null
+          org_id: string
+          staff_booking_id: string | null
+          support_item_code: string | null
+          unit_rate: number | null
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          booking_id: string
+          created_at?: string
+          id?: string
+          kilometres?: number
+          line_type: string
+          minutes?: number
+          mmm_zone?: string | null
+          notes?: string | null
+          org_id: string
+          staff_booking_id?: string | null
+          support_item_code?: string | null
+          unit_rate?: number | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          booking_id?: string
+          created_at?: string
+          id?: string
+          kilometres?: number
+          line_type?: string
+          minutes?: number
+          mmm_zone?: string | null
+          notes?: string | null
+          org_id?: string
+          staff_booking_id?: string | null
+          support_item_code?: string | null
+          unit_rate?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_travel_lines_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_travel_lines_staff_booking_id_fkey"
+            columns: ["staff_booking_id"]
+            isOneToOne: false
+            referencedRelation: "staff_bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bookings: {
         Row: {
           cancellation_reason: string | null
           created_at: string
           created_by: string | null
+          end_lat: number | null
+          end_lng: number | null
           ends_at: string
           id: string
           location: string | null
           location_address: string | null
+          location_id: string | null
+          location_kind: string
           location_source: string
           notes: string | null
           org_id: string
+          participant_address_id: string | null
           participant_id: string
           service_type: string
           starts_at: string
@@ -132,13 +203,18 @@ export type Database = {
           cancellation_reason?: string | null
           created_at?: string
           created_by?: string | null
+          end_lat?: number | null
+          end_lng?: number | null
           ends_at: string
           id?: string
           location?: string | null
           location_address?: string | null
+          location_id?: string | null
+          location_kind?: string
           location_source?: string
           notes?: string | null
           org_id: string
+          participant_address_id?: string | null
           participant_id: string
           service_type?: string
           starts_at: string
@@ -151,13 +227,18 @@ export type Database = {
           cancellation_reason?: string | null
           created_at?: string
           created_by?: string | null
+          end_lat?: number | null
+          end_lng?: number | null
           ends_at?: string
           id?: string
           location?: string | null
           location_address?: string | null
+          location_id?: string | null
+          location_kind?: string
           location_source?: string
           notes?: string | null
           org_id?: string
+          participant_address_id?: string | null
           participant_id?: string
           service_type?: string
           starts_at?: string
@@ -167,6 +248,20 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "bookings_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_participant_address_id_fkey"
+            columns: ["participant_address_id"]
+            isOneToOne: false
+            referencedRelation: "participant_addresses"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "bookings_participant_id_fkey"
             columns: ["participant_id"]
@@ -229,6 +324,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      geocode_cache: {
+        Row: {
+          address_hash: string
+          components: Json | null
+          created_at: string
+          formatted_address: string | null
+          id: string
+          lat: number
+          lng: number
+          place_id: string | null
+          raw_address: string
+        }
+        Insert: {
+          address_hash: string
+          components?: Json | null
+          created_at?: string
+          formatted_address?: string | null
+          id?: string
+          lat: number
+          lng: number
+          place_id?: string | null
+          raw_address: string
+        }
+        Update: {
+          address_hash?: string
+          components?: Json | null
+          created_at?: string
+          formatted_address?: string | null
+          id?: string
+          lat?: number
+          lng?: number
+          place_id?: string | null
+          raw_address?: string
+        }
+        Relationships: []
       }
       invoices: {
         Row: {
@@ -301,6 +432,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      locations: {
+        Row: {
+          active: boolean
+          address: string
+          created_at: string
+          id: string
+          lat: number | null
+          lng: number | null
+          location_type: string
+          name: string
+          notes: string | null
+          org_id: string
+          postcode: string | null
+          state: string | null
+          suburb: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          address: string
+          created_at?: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          location_type?: string
+          name: string
+          notes?: string | null
+          org_id: string
+          postcode?: string | null
+          state?: string | null
+          suburb?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          address?: string
+          created_at?: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          location_type?: string
+          name?: string
+          notes?: string | null
+          org_id?: string
+          postcode?: string | null
+          state?: string | null
+          suburb?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       messages: {
         Row: {
@@ -455,6 +637,65 @@ export type Database = {
             columns: ["visit_id"]
             isOneToOne: false
             referencedRelation: "visits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      participant_addresses: {
+        Row: {
+          address: string
+          created_at: string
+          id: string
+          is_primary: boolean
+          label: string
+          lat: number | null
+          lng: number | null
+          notes: string | null
+          org_id: string
+          participant_id: string
+          postcode: string | null
+          state: string | null
+          suburb: string | null
+          updated_at: string
+        }
+        Insert: {
+          address: string
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          label?: string
+          lat?: number | null
+          lng?: number | null
+          notes?: string | null
+          org_id: string
+          participant_id: string
+          postcode?: string | null
+          state?: string | null
+          suburb?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          label?: string
+          lat?: number | null
+          lng?: number | null
+          notes?: string | null
+          org_id?: string
+          participant_id?: string
+          postcode?: string | null
+          state?: string | null
+          suburb?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "participant_addresses_participant_id_fkey"
+            columns: ["participant_id"]
+            isOneToOne: false
+            referencedRelation: "participants"
             referencedColumns: ["id"]
           },
         ]
@@ -880,6 +1121,11 @@ export type Database = {
           org_id: string
           role: string
           staff_id: string
+          travel_from_label: string | null
+          travel_from_lat: number | null
+          travel_from_lng: number | null
+          travel_km_before: number | null
+          travel_minutes_before: number | null
           updated_at: string
         }
         Insert: {
@@ -889,6 +1135,11 @@ export type Database = {
           org_id: string
           role?: string
           staff_id: string
+          travel_from_label?: string | null
+          travel_from_lat?: number | null
+          travel_from_lng?: number | null
+          travel_km_before?: number | null
+          travel_minutes_before?: number | null
           updated_at?: string
         }
         Update: {
@@ -898,6 +1149,11 @@ export type Database = {
           org_id?: string
           role?: string
           staff_id?: string
+          travel_from_label?: string | null
+          travel_from_lat?: number | null
+          travel_from_lng?: number | null
+          travel_km_before?: number | null
+          travel_minutes_before?: number | null
           updated_at?: string
         }
         Relationships: [
