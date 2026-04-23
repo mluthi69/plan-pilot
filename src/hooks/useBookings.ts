@@ -100,9 +100,12 @@ export function useBookings(range?: { from?: string; to?: string }) {
               r === "primary" ? 0 : r === "support" ? 1 : r === "shadow" ? 2 : 3;
             return rank(a.role) - rank(b.role) || a.display_name.localeCompare(b.display_name);
           });
+        const p = b.participants;
         return {
           ...b,
-          participant_name: b.participants?.name,
+          participant: p
+            ? { id: b.participant_id, name: p.name, address: p.address ?? null }
+            : null,
           staff,
         };
       }) as Booking[];
@@ -141,8 +144,6 @@ export function useCreateBooking() {
         org_id: orgId,
         booking_id: booking.id,
         participant_id: booking.participant_id,
-        worker_id: booking.assigned_worker_id,
-        worker_name: booking.assigned_worker_name,
         scheduled_start: booking.starts_at,
         scheduled_end: booking.ends_at,
         status: "scheduled",
@@ -215,8 +216,6 @@ export function useUpdateBooking() {
           Booking,
           | "starts_at"
           | "ends_at"
-          | "assigned_worker_id"
-          | "assigned_worker_name"
           | "support_category"
           | "location_address"
           | "location_source"
@@ -233,12 +232,10 @@ export function useUpdateBooking() {
         .eq("id", id);
       if (error) throw error;
 
-      // Mirror schedule + worker changes onto the linked visit.
+      // Mirror schedule changes onto the linked visit.
       const visitPatch: any = {};
       if (patch.starts_at) visitPatch.scheduled_start = patch.starts_at;
       if (patch.ends_at) visitPatch.scheduled_end = patch.ends_at;
-      if (patch.assigned_worker_id !== undefined) visitPatch.worker_id = patch.assigned_worker_id;
-      if (patch.assigned_worker_name !== undefined) visitPatch.worker_name = patch.assigned_worker_name;
       if (Object.keys(visitPatch).length) {
         await (supabase as any).from("visits").update(visitPatch).eq("booking_id", id);
       }

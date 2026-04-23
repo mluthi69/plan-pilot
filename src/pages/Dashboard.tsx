@@ -34,7 +34,7 @@ export default function Dashboard() {
   // Alert builders
   const unsubmittedNotes = todayVisits.filter((v) => v.status === "completed" && !v.notes_submitted);
   const unsignedVisits = todayVisits.filter((v) => v.status === "completed" && !v.participant_signed);
-  const unallocated = weekBookings.filter((b) => !b.assigned_worker_name);
+  const unallocated = weekBookings.filter((b) => b.staff.length === 0);
   const expiringAgreements = agreements.filter((a) => {
     if (a.status !== "active") return false;
     const days = (new Date(a.end_date).getTime() - today.getTime()) / 86400000;

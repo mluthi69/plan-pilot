@@ -48,10 +48,10 @@ export default function Exceptions() {
       title: "Unallocated bookings (next 7 days)",
       icon: Calendar,
       items: bookings
-        .filter((b) => !b.assigned_worker_name && b.status !== "cancelled")
+        .filter((b) => b.staff.length === 0 && b.status !== "cancelled")
         .map((b) => ({
           id: b.id,
-          label: b.participant_name ?? "Participant",
+          label: b.participant?.name ?? "Participant",
           sub: new Date(b.starts_at).toLocaleString("en-AU"),
           to: `/schedule`,
         })),

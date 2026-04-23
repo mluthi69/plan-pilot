@@ -50,7 +50,7 @@ interface SchedulerEvent {
 function toEvents(b: Booking): SchedulerEvent[] {
   const start = new Date(b.starts_at);
   const end = new Date(b.ends_at);
-  const title = `${b.participant_name ?? "—"} · ${b.service_type}`;
+  const title = `${b.participant?.name ?? "—"} · ${b.service_type}`;
   const lanes = b.staff.length
     ? b.staff.map((s) => s.staff_id)
     : [UNALLOCATED_ID];
