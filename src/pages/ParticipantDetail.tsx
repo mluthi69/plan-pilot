@@ -50,7 +50,7 @@ export default function ParticipantDetail() {
   const { data: categories = [] } = useBudgetCategories(id);
   const { data: agreements = [] } = useAgreements(id);
   const { data: allInvoices = [] } = useInvoices();
-  const { data: notes = [] } = useNotes(id);
+  const { data: notes = [] } = useNotes({ participantId: id });
 
   const invoices = useMemo(
     () => allInvoices.filter((i) => i.participant_id === id),
