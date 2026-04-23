@@ -3,7 +3,6 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -13,6 +12,7 @@ import { useStaff, staffDisplayName } from "@/hooks/useStaff";
 import { useNdisCategories } from "@/hooks/useNdisCategories";
 import { isHalfHourSlot } from "@/hooks/useStaffAvailability";
 import { toast } from "sonner";
+import BookingLocationPicker, { ResolvedLocation } from "@/components/locations/BookingLocationPicker";
 
 interface Props {
   open: boolean;
@@ -48,8 +48,14 @@ export default function BookingDrawer({ open, onOpenChange, defaultDate }: Props
   const [serviceType, setServiceType] = useState("Personal care");
   const [startsAt, setStartsAt] = useState(toLocalInput(initialStart));
   const [endsAt, setEndsAt] = useState(toLocalInput(initialEnd));
-  const [overrideLocation, setOverrideLocation] = useState(false);
-  const [locationAddress, setLocationAddress] = useState("");
+  const [location, setLocation] = useState<ResolvedLocation>({
+    location_kind: "participant_address",
+    participant_address_id: null,
+    location_id: null,
+    location_address: null,
+    end_lat: null,
+    end_lng: null,
+  });
   const [notes, setNotes] = useState("");
 
   // Re-seed dates when drawer is reopened with a new default
@@ -59,11 +65,18 @@ export default function BookingDrawer({ open, onOpenChange, defaultDate }: Props
       setStartsAt(toLocalInput(s));
       setEndsAt(toLocalInput(new Date(s.getTime() + 60 * 60 * 1000)));
       setStaffIds([]);
+      setLocation({
+        location_kind: "participant_address",
+        participant_address_id: null,
+        location_id: null,
+        location_address: null,
+        end_lat: null,
+        end_lng: null,
+      });
     }
   }, [open, defaultDate]);
 
   const participant = useMemo(() => participants.find((p) => p.id === participantId), [participants, participantId]);
-  const derivedAddress = participant?.address ?? "";
 
   // Filter staff list down to those who carry the chosen category (when set)
   const eligibleStaff = useMemo(() => {
@@ -96,9 +109,14 @@ export default function BookingDrawer({ open, onOpenChange, defaultDate }: Props
       service_type: serviceType,
       starts_at: startD.toISOString(),
       ends_at: endD.toISOString(),
-      location_source: overrideLocation ? "override" : "participant",
-      location_address: overrideLocation ? locationAddress || null : derivedAddress || null,
-      location: overrideLocation ? locationAddress || null : derivedAddress || null,
+      location_kind: location.location_kind,
+      participant_address_id: location.participant_address_id,
+      location_id: location.location_id,
+      location_source: location.location_kind === "override" ? "override" : "participant",
+      location_address: location.location_address,
+      location: location.location_address,
+      end_lat: location.end_lat,
+      end_lng: location.end_lng,
       notes: notes || null,
     });
     onOpenChange(false);
@@ -181,23 +199,11 @@ export default function BookingDrawer({ open, onOpenChange, defaultDate }: Props
             <p className="text-xs text-muted-foreground">First selected staff acts as primary; the rest as support.</p>
           </div>
 
-          <div className="space-y-2 rounded-md border p-3">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="override">Override location</Label>
-              <Switch id="override" checked={overrideLocation} onCheckedChange={setOverrideLocation} />
-            </div>
-            {!overrideLocation ? (
-              <p className="text-xs text-muted-foreground">
-                {derivedAddress ? `Using participant address: ${derivedAddress}` : "Participant has no address on file."}
-              </p>
-            ) : (
-              <Input
-                value={locationAddress}
-                onChange={(e) => setLocationAddress(e.target.value)}
-                placeholder="Enter override address"
-              />
-            )}
-          </div>
+          <BookingLocationPicker
+            participantId={participantId || undefined}
+            value={location}
+            onChange={setLocation}
+          />
 
           <div className="space-y-1.5">
             <Label>Notes</Label>
