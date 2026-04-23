@@ -102,7 +102,6 @@ export type Database = {
           org_id: string
           participant_id: string
           service_type: string
-          staff_id: string | null
           starts_at: string
           status: string
           support_category: string | null
@@ -124,7 +123,6 @@ export type Database = {
           org_id: string
           participant_id: string
           service_type?: string
-          staff_id?: string | null
           starts_at: string
           status?: string
           support_category?: string | null
@@ -146,7 +144,6 @@ export type Database = {
           org_id?: string
           participant_id?: string
           service_type?: string
-          staff_id?: string | null
           starts_at?: string
           status?: string
           support_category?: string | null
@@ -154,13 +151,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "bookings_staff_id_fkey"
-            columns: ["staff_id"]
-            isOneToOne: false
-            referencedRelation: "staff"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "bookings_support_category_fkey"
             columns: ["support_category"]
@@ -799,6 +789,51 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "staff_availability_exception_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_bookings: {
+        Row: {
+          booking_id: string
+          created_at: string
+          id: string
+          org_id: string
+          role: string
+          staff_id: string
+          updated_at: string
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string
+          id?: string
+          org_id: string
+          role?: string
+          staff_id: string
+          updated_at?: string
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          id?: string
+          org_id?: string
+          role?: string
+          staff_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_bookings_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_bookings_staff_id_fkey"
             columns: ["staff_id"]
             isOneToOne: false
             referencedRelation: "staff"
