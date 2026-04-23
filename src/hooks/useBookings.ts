@@ -18,6 +18,11 @@ export interface Booking {
   participant_name?: string;
   assigned_worker_id: string | null;
   assigned_worker_name: string | null;
+  staff_id: string | null;
+  staff_name?: string;
+  support_category: string | null;
+  location_address: string | null;
+  location_source: "participant" | "override";
   service_type: string;
   support_item_code: string | null;
   starts_at: string;
@@ -34,6 +39,10 @@ export interface BookingInput {
   participant_id: string;
   assigned_worker_id?: string | null;
   assigned_worker_name?: string | null;
+  staff_id?: string | null;
+  support_category?: string | null;
+  location_address?: string | null;
+  location_source?: "participant" | "override";
   service_type: string;
   support_item_code?: string | null;
   starts_at: string;
