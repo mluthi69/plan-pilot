@@ -18,4 +18,9 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  define: {
+    // Bake the Kendo UI license JWT into the bundle at build time.
+    // The value comes from the `KENDO_UI_LICENSE` build secret.
+    __KENDO_UI_LICENSE__: JSON.stringify(process.env.KENDO_UI_LICENSE ?? ""),
+  },
 }));
