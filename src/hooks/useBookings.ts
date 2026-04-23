@@ -29,9 +29,8 @@ export interface Booking {
   id: string;
   org_id: string;
   participant_id: string;
-  participant_name?: string;
-  assigned_worker_id: string | null;
-  assigned_worker_name: string | null;
+  /** Embedded participant snapshot (joined). */
+  participant: { id: string; name: string; address: string | null } | null;
   /** All assigned staff (many-to-many via staff_bookings). */
   staff: BookingStaff[];
   support_category: string | null;
@@ -51,8 +50,6 @@ export interface Booking {
 
 export interface BookingInput {
   participant_id: string;
-  assigned_worker_id?: string | null;
-  assigned_worker_name?: string | null;
   /** Optional list of staff to attach when creating the booking. */
   staff_ids?: string[];
   support_category?: string | null;
