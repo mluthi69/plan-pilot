@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import { useUser } from "@clerk/clerk-react";
 import { useVisits } from "@/hooks/useVisits";
 import { Clock, MapPin, ChevronRight, AlertCircle, CheckCircle2 } from "lucide-react";
 
@@ -11,22 +10,13 @@ function endOfDay(d: Date) {
 }
 
 export default function MyDay() {
-  const { user } = useUser();
   const today = new Date();
-  const { data: visits = [], isLoading } = useVisits({
-    workerId: user?.id ?? null,
+  // TODO: once we map Clerk users → staff records, filter by the signed-in
+  // staff via { staffId }. For now show all of today's visits.
+  const { data: list = [], isLoading } = useVisits({
     from: startOfDay(today).toISOString(),
     to: endOfDay(today).toISOString(),
   });
-
-  // Fallback: if no worker_id matches yet, show all today visits.
-  const showAll = !isLoading && visits.length === 0;
-  const allToday = useVisits(showAll ? {
-    from: startOfDay(today).toISOString(),
-    to: endOfDay(today).toISOString(),
-  } : undefined).data ?? [];
-
-  const list = visits.length > 0 ? visits : allToday;
 
   const fmtTime = (s: string) => new Date(s).toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit" });
 
@@ -77,7 +67,7 @@ export default function MyDay() {
                   <div className="flex-1 p-3">
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <p className="font-semibold text-foreground">{v.participant_name ?? "Participant"}</p>
+                        <p className="font-semibold text-foreground">{v.participant?.name ?? "Participant"}</p>
                         <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
                           <Clock className="h-3 w-3" />
                           {Math.round((new Date(v.scheduled_end).getTime() - new Date(v.scheduled_start).getTime())/60000)} min

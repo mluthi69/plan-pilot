@@ -27,7 +27,7 @@ export default function Exceptions() {
         .filter((v) => v.status === "completed" && !v.notes_submitted)
         .map((v) => ({
           id: v.id,
-          label: v.participant_name ?? "Participant",
+          label: v.participant?.name ?? "Participant",
           sub: `Completed ${new Date(v.actual_end ?? v.scheduled_end).toLocaleString("en-AU")}`,
           to: `/visits/${v.id}`,
         })),
@@ -39,7 +39,7 @@ export default function Exceptions() {
         .filter((v) => v.status === "completed" && !v.participant_signed)
         .map((v) => ({
           id: v.id,
-          label: v.participant_name ?? "Participant",
+          label: v.participant?.name ?? "Participant",
           sub: `Completed ${new Date(v.actual_end ?? v.scheduled_end).toLocaleString("en-AU")}`,
           to: `/visits/${v.id}`,
         })),
@@ -63,7 +63,7 @@ export default function Exceptions() {
         .filter((v) => v.status === "cancelled" || v.status === "no_show")
         .map((v) => ({
           id: v.id,
-          label: `${v.participant_name ?? "Participant"} — ${v.status.replace("_", " ")}`,
+          label: `${v.participant?.name ?? "Participant"} — ${v.status.replace("_", " ")}`,
           sub: new Date(v.scheduled_start).toLocaleString("en-AU"),
           to: `/visits/${v.id}`,
         })),

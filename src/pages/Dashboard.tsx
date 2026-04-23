@@ -102,8 +102,11 @@ export default function Dashboard() {
                     {new Date(v.scheduled_start).toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit" })}
                   </div>
                   <Link to={`/visits/${v.id}`} className="flex-1 hover:underline">
-                    <span className="font-medium">{v.participant_name ?? "—"}</span>
-                    <span className="ml-2 text-xs text-muted-foreground">· {v.worker_name ?? "Unallocated"}</span>
+                    <span className="font-medium">{v.participant?.name ?? "—"}</span>
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      · {v.staff[0]?.display_name ?? "Unallocated"}
+                      {v.staff.length > 1 ? ` +${v.staff.length - 1}` : ""}
+                    </span>
                   </Link>
                   <span className="text-[11px] capitalize text-muted-foreground">{v.status.replace("_", " ")}</span>
                 </li>
