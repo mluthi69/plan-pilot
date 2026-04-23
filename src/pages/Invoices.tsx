@@ -24,7 +24,7 @@ const statusTransitions: Record<string, InvoiceStatus[]> = {
 };
 
 export default function Invoices() {
-  const { isFinance, role } = useUserRole();
+  const { isFinance } = useUserRole();
   const { user } = useUser();
   const { data: invoices = [], isLoading } = useInvoices();
   const { data: stats } = useInvoiceStats();
