@@ -158,20 +158,34 @@ export default function BookingDrawer({ open, onOpenChange, defaultDate }: Props
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <Label>Assign staff</Label>
-            <Select value={staffId} onValueChange={setStaffId}>
-              <SelectTrigger><SelectValue placeholder="Leave unallocated…" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">Unallocated</SelectItem>
-                {eligibleStaff.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>{staffDisplayName(s)}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {staffId && supportCategory && !staffHasCategory && (
-              <p className="text-xs text-destructive">This staff member does not list this category as a skill.</p>
-            )}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>Assign staff</Label>
+              {staffIds.length > 0 && (
+                <span className="text-xs text-muted-foreground">{staffIds.length} selected</span>
+              )}
+            </div>
+            <div className="max-h-48 space-y-1 overflow-y-auto rounded-md border p-2">
+              {eligibleStaff.length === 0 && (
+                <p className="px-1 py-2 text-xs text-muted-foreground">No bookable staff available.</p>
+              )}
+              {eligibleStaff.map((s) => {
+                const checked = staffIds.includes(s.id);
+                return (
+                  <label
+                    key={s.id}
+                    className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-muted"
+                  >
+                    <Checkbox checked={checked} onCheckedChange={() => toggleStaff(s.id)} />
+                    <span>{staffDisplayName(s)}</span>
+                    {checked && staffIds[0] === s.id && (
+                      <Badge variant="secondary" className="ml-auto text-[10px]">primary</Badge>
+                    )}
+                  </label>
+                );
+              })}
+            </div>
+            <p className="text-xs text-muted-foreground">First selected staff acts as primary; the rest as support.</p>
           </div>
 
           <div className="space-y-2 rounded-md border p-3">
