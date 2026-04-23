@@ -17,7 +17,7 @@ export interface ServiceAgreement {
   id: string;
   org_id: string;
   participant_id: string;
-  participant_name?: string;
+  participant: { id: string; name: string } | null;
   title: string;
   status: AgreementStatus;
   start_date: string;
@@ -47,7 +47,7 @@ export function useAgreements(participantId?: string) {
       if (error) throw error;
       return (data ?? []).map((a: any) => ({
         ...a,
-        participant_name: a.participants?.name,
+        participant: a.participants ? { id: a.participant_id, name: a.participants.name } : null,
       })) as ServiceAgreement[];
     },
   });

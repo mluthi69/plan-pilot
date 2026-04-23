@@ -75,10 +75,10 @@ export default function ParticipantDetail() {
   const providerSummary = useMemo(() => {
     const map = new Map<string, { name: string; abn: string; count: number; amount: number }>();
     for (const inv of invoices) {
-      const key = inv.provider_id ?? inv.provider_name ?? "unknown";
+      const key = inv.provider_id ?? inv.provider?.name ?? "unknown";
       const existing = map.get(key) ?? {
-        name: inv.provider_name ?? "Unknown provider",
-        abn: inv.provider_abn ?? "—",
+        name: inv.provider?.name ?? "Unknown provider",
+        abn: inv.provider?.abn ?? "—",
         count: 0,
         amount: 0,
       };
@@ -275,7 +275,7 @@ export default function ParticipantDetail() {
                     {invoices.map((inv) => (
                       <TableRow key={inv.id}>
                         <TableCell className="font-mono text-xs font-medium">{inv.invoice_number}</TableCell>
-                        <TableCell className="text-sm">{inv.provider_name ?? "—"}</TableCell>
+                        <TableCell className="text-sm">{inv.provider?.name ?? "—"}</TableCell>
                         <TableCell className="text-xs text-muted-foreground">{inv.category}</TableCell>
                         <TableCell className="text-xs text-muted-foreground">{formatDate(inv.received_at)}</TableCell>
                         <TableCell className="text-right text-sm font-medium">{money(Number(inv.amount))}</TableCell>

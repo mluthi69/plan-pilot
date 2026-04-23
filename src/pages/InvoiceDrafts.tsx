@@ -130,7 +130,12 @@ function CandidateTable({
                 </Link>
               </td>
               <td className="px-4 py-2.5 font-medium">{c.participant_name}</td>
-              <td className="px-4 py-2.5 text-muted-foreground">{c.worker_name ?? "—"}</td>
+              <td className="px-4 py-2.5 text-muted-foreground">
+                {c.staff_names.length === 0
+                  ? "—"
+                  : c.staff_names[0] +
+                    (c.staff_names.length > 1 ? ` +${c.staff_names.length - 1}` : "")}
+              </td>
               <td className="px-4 py-2.5 font-mono text-[11px] text-muted-foreground">
                 {c.item_code ?? <span className="italic text-warning">no agreement</span>}
               </td>

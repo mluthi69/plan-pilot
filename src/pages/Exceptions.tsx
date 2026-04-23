@@ -27,7 +27,7 @@ export default function Exceptions() {
         .filter((v) => v.status === "completed" && !v.notes_submitted)
         .map((v) => ({
           id: v.id,
-          label: v.participant_name ?? "Participant",
+          label: v.participant?.name ?? "Participant",
           sub: `Completed ${new Date(v.actual_end ?? v.scheduled_end).toLocaleString("en-AU")}`,
           to: `/visits/${v.id}`,
         })),
@@ -39,7 +39,7 @@ export default function Exceptions() {
         .filter((v) => v.status === "completed" && !v.participant_signed)
         .map((v) => ({
           id: v.id,
-          label: v.participant_name ?? "Participant",
+          label: v.participant?.name ?? "Participant",
           sub: `Completed ${new Date(v.actual_end ?? v.scheduled_end).toLocaleString("en-AU")}`,
           to: `/visits/${v.id}`,
         })),
@@ -48,10 +48,10 @@ export default function Exceptions() {
       title: "Unallocated bookings (next 7 days)",
       icon: Calendar,
       items: bookings
-        .filter((b) => !b.assigned_worker_name && b.status !== "cancelled")
+        .filter((b) => b.staff.length === 0 && b.status !== "cancelled")
         .map((b) => ({
           id: b.id,
-          label: b.participant_name ?? "Participant",
+          label: b.participant?.name ?? "Participant",
           sub: new Date(b.starts_at).toLocaleString("en-AU"),
           to: `/schedule`,
         })),
@@ -63,7 +63,7 @@ export default function Exceptions() {
         .filter((v) => v.status === "cancelled" || v.status === "no_show")
         .map((v) => ({
           id: v.id,
-          label: `${v.participant_name ?? "Participant"} — ${v.status.replace("_", " ")}`,
+          label: `${v.participant?.name ?? "Participant"} — ${v.status.replace("_", " ")}`,
           sub: new Date(v.scheduled_start).toLocaleString("en-AU"),
           to: `/visits/${v.id}`,
         })),
@@ -104,7 +104,7 @@ export default function Exceptions() {
         .map((i) => ({
           id: i.id,
           label: `${i.invoice_number} — $${Number(i.amount).toFixed(2)}`,
-          sub: `${i.participant_name ?? "—"} · ${i.status}`,
+          sub: `${i.participant?.name ?? "—"} · ${i.status}`,
           to: `/invoices`,
         })),
     },

@@ -79,8 +79,13 @@ export default function Visits() {
                       minute: "2-digit",
                     })}
                   </td>
-                  <td className="px-4 py-3 font-medium">{v.participant_name ?? "—"}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{v.worker_name ?? "Unallocated"}</td>
+                  <td className="px-4 py-3 font-medium">{v.participant?.name ?? "—"}</td>
+                  <td className="px-4 py-3 text-muted-foreground">
+                    {v.staff[0]?.display_name ?? "Unallocated"}
+                    {v.staff.length > 1 && (
+                      <span className="ml-1 text-xs text-muted-foreground">+{v.staff.length - 1}</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3">
                     <span className={`rounded-full border px-2 py-0.5 text-[11px] capitalize ${statusBadge[v.status] ?? ""}`}>
                       {v.status.replace("_", " ")}

@@ -88,8 +88,6 @@ export type Database = {
       }
       bookings: {
         Row: {
-          assigned_worker_id: string | null
-          assigned_worker_name: string | null
           cancellation_reason: string | null
           created_at: string
           created_by: string | null
@@ -109,8 +107,6 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          assigned_worker_id?: string | null
-          assigned_worker_name?: string | null
           cancellation_reason?: string | null
           created_at?: string
           created_by?: string | null
@@ -130,8 +126,6 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          assigned_worker_id?: string | null
-          assigned_worker_name?: string | null
           cancellation_reason?: string | null
           created_at?: string
           created_by?: string | null
@@ -910,8 +904,6 @@ export type Database = {
           scheduled_start: string
           status: string
           updated_at: string
-          worker_id: string | null
-          worker_name: string | null
         }
         Insert: {
           actual_end?: string | null
@@ -930,8 +922,6 @@ export type Database = {
           scheduled_start: string
           status?: string
           updated_at?: string
-          worker_id?: string | null
-          worker_name?: string | null
         }
         Update: {
           actual_end?: string | null
@@ -950,8 +940,6 @@ export type Database = {
           scheduled_start?: string
           status?: string
           updated_at?: string
-          worker_id?: string | null
-          worker_name?: string | null
         }
         Relationships: []
       }

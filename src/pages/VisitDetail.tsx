@@ -42,15 +42,20 @@ export default function VisitDetail() {
 
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">{visit.participant_name ?? "Participant"}</h1>
+          <h1 className="text-2xl font-semibold">{visit.participant?.name ?? "Participant"}</h1>
           <p className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
             <Clock className="h-3.5 w-3.5" />
             {fmt(visit.scheduled_start)} – {fmt(visit.scheduled_end)}
           </p>
-          {(visit as any).participants?.address && (
+          {visit.participant?.address && (
             <p className="mt-0.5 flex items-center gap-2 text-sm text-muted-foreground">
               <MapPin className="h-3.5 w-3.5" />
-              {(visit as any).participants.address}
+              {visit.participant.address}
+            </p>
+          )}
+          {visit.staff.length > 0 && (
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Staff: {visit.staff.map((s) => s.display_name).join(", ")}
             </p>
           )}
         </div>

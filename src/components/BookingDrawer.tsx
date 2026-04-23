@@ -89,16 +89,9 @@ export default function BookingDrawer({ open, onOpenChange, defaultDate }: Props
       return;
     }
 
-    // Mirror the first assigned staff into the legacy worker fields for back-compat with Visits.
-    const primary = staffIds[0]
-      ? eligibleStaff.find((s) => s.id === staffIds[0]) ?? null
-      : null;
-
     await create.mutateAsync({
       participant_id: participantId,
       staff_ids: staffIds,
-      assigned_worker_id: primary?.id ?? null,
-      assigned_worker_name: primary ? staffDisplayName(primary) : null,
       support_category: supportCategory || null,
       service_type: serviceType,
       starts_at: startD.toISOString(),

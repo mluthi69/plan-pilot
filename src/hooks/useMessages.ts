@@ -12,6 +12,8 @@ export interface Message {
   id: string;
   org_id: string;
   participant_id: string;
+  /** Embedded participant (only populated by useRecentMessages). */
+  participant?: { id: string; name: string } | null;
   booking_id: string | null;
   visit_id: string | null;
   channel: MessageChannel;
@@ -57,7 +59,10 @@ export function useRecentMessages(limit = 20) {
         .order("created_at", { ascending: false })
         .limit(limit);
       if (error) throw error;
-      return (data ?? []).map((m: any) => ({ ...m, participant_name: m.participants?.name })) as (Message & { participant_name?: string })[];
+      return (data ?? []).map((m: any) => ({
+        ...m,
+        participant: m.participants ? { id: m.participant_id, name: m.participants.name } : null,
+      })) as Message[];
     },
   });
 }

@@ -22,9 +22,8 @@ export interface Invoice {
   created_at: string;
   updated_at: string;
   // joined
-  provider_name?: string;
-  participant_name?: string;
-  provider_abn?: string;
+  provider: { id: string; name: string; abn: string | null } | null;
+  participant: { id: string; name: string } | null;
 }
 
 export function useInvoices() {
@@ -42,9 +41,10 @@ export function useInvoices() {
       if (error) throw error;
       return (data as any[]).map((inv) => ({
         ...inv,
-        provider_name: inv.providers?.name ?? null,
-        provider_abn: inv.providers?.abn ?? null,
-        participant_name: inv.participants?.name ?? null,
+        provider: inv.providers
+          ? { id: inv.provider_id, name: inv.providers.name, abn: inv.providers.abn ?? null }
+          : null,
+        participant: inv.participants ? { id: inv.participant_id, name: inv.participants.name } : null,
       })) as Invoice[];
     },
   });
@@ -66,7 +66,8 @@ export function useProviderInvoices(providerId: string | undefined) {
       if (error) throw error;
       return (data as any[]).map((inv) => ({
         ...inv,
-        participant_name: inv.participants?.name ?? null,
+        provider: null,
+        participant: inv.participants ? { id: inv.participant_id, name: inv.participants.name } : null,
       })) as Invoice[];
     },
   });
@@ -77,7 +78,7 @@ export function useCreateInvoice() {
   const orgId = useOrgId();
 
   return useMutation({
-    mutationFn: async (invoice: Omit<Invoice, "id" | "org_id" | "created_at" | "updated_at" | "provider_name" | "participant_name" | "provider_abn">) => {
+    mutationFn: async (invoice: Omit<Invoice, "id" | "org_id" | "created_at" | "updated_at" | "provider" | "participant">) => {
       const { data, error } = await (supabase as any)
         .from("invoices")
         .insert({ ...invoice, org_id: orgId })
