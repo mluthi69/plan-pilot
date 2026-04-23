@@ -6,7 +6,6 @@ import {
   DayView,
   WeekView,
   type SchedulerDataChangeEvent,
-  type SchedulerSlotClickEvent,
   type SchedulerItemProps,
   SchedulerItem,
 } from "@progress/kendo-react-scheduler";
@@ -24,6 +23,7 @@ import {
   type BookingStatus,
 } from "@/hooks/useBookings";
 import { useParticipants } from "@/hooks/useParticipantsDb";
+import { useStaff, staffDisplayName } from "@/hooks/useStaff";
 import BookingDrawer from "@/components/BookingDrawer";
 
 const UNALLOCATED_ID = "__unallocated__";
@@ -77,6 +77,7 @@ export default function Schedule() {
 
   const { data: bookings = [] } = useBookings();
   const { data: participants = [] } = useParticipants();
+  const { data: staff = [] } = useStaff();
   const createBooking = useCreateBooking();
   const updateBooking = useUpdateBooking();
 
@@ -89,21 +90,18 @@ export default function Schedule() {
     }
   }, [params, setParams]);
 
-  // Derive worker resources from existing bookings (no workers table yet).
+  // Worker resources come from real staff records (active + bookable).
   const workerResources = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const b of bookings) {
-      const id = b.assigned_worker_id ?? b.assigned_worker_name;
-      if (id) map.set(id, b.assigned_worker_name ?? id);
-    }
-    const list = Array.from(map.entries()).map(([id, text]) => ({
-      value: id,
-      text,
-      color: "hsl(var(--primary))",
-    }));
+    const list = staff
+      .filter((s) => s.bookable && s.status === "active")
+      .map((s) => ({
+        value: s.id,
+        text: staffDisplayName(s),
+        color: "hsl(var(--primary))",
+      }));
     list.unshift({ value: UNALLOCATED_ID, text: "Unallocated", color: "hsl(var(--muted-foreground))" });
     return list;
-  }, [bookings]);
+  }, [staff]);
 
   const participantResources = useMemo(
     () =>
