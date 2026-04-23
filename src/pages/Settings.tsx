@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useOrganization } from "@clerk/clerk-react";
-import { Building2, Palette, Users, Shield, Link2, CreditCard, FileText, Save, Loader2 } from "lucide-react";
+import { Building2, Palette, Users, Shield, Link2, CreditCard, FileText, Save, Loader2, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import LocationsManager from "@/components/locations/LocationsManager";
 
 const roles = [
   { name: "Tenant Admin", users: 2, permissions: "Full access", builtin: true },
@@ -54,6 +55,7 @@ export default function Settings() {
           <TabsTrigger value="branding"><Palette className="mr-1.5 h-3.5 w-3.5" />Branding</TabsTrigger>
           <TabsTrigger value="roles"><Shield className="mr-1.5 h-3.5 w-3.5" />Roles & Permissions</TabsTrigger>
           <TabsTrigger value="workflows"><FileText className="mr-1.5 h-3.5 w-3.5" />Workflows</TabsTrigger>
+          <TabsTrigger value="locations"><MapPin className="mr-1.5 h-3.5 w-3.5" />Locations</TabsTrigger>
           <TabsTrigger value="integrations"><Link2 className="mr-1.5 h-3.5 w-3.5" />Integrations</TabsTrigger>
           <TabsTrigger value="billing"><CreditCard className="mr-1.5 h-3.5 w-3.5" />Billing</TabsTrigger>
         </TabsList>
