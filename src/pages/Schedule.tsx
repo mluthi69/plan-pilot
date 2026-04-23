@@ -170,12 +170,6 @@ export default function Schedule() {
     // for a richer form, and ignore in-Scheduler delete to keep the audit trail clean.)
   }
 
-  /** Click an empty slot → open create drawer prefilled with that time. */
-  function handleSlotClick(e: { start: Date }) {
-    setDrawerDefaultDate(e.start);
-    setDrawerOpen(true);
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -230,7 +224,6 @@ export default function Schedule() {
           group={group}
           resources={resources}
           onDataChange={handleDataChange}
-          onSlotClick={handleSlotClick}
           item={EventItem}
           height={680}
         >
