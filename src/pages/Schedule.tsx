@@ -51,8 +51,10 @@ function toEvents(b: Booking): SchedulerEvent[] {
   const start = new Date(b.starts_at);
   const end = new Date(b.ends_at);
   const title = `${b.participant_name ?? "—"} · ${b.service_type}`;
-  const ids = b.staff_ids.length ? b.staff_ids : [UNALLOCATED_ID];
-  return ids.map((wid) => ({
+  const lanes = b.staff.length
+    ? b.staff.map((s) => s.staff_id)
+    : [UNALLOCATED_ID];
+  return lanes.map((wid) => ({
     id: `${b.id}::${wid}`,
     bookingId: b.id,
     title,

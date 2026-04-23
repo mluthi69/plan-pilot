@@ -11,6 +11,20 @@ export type BookingStatus =
   | "cancelled"
   | "no_show";
 
+/** Staff assignment as it appears on a Booking row. */
+export type BookingStaffRole = "primary" | "support" | "shadow" | "observer";
+
+export interface BookingStaff {
+  /** staff_bookings link row id (useful for delete / role updates). */
+  link_id: string;
+  staff_id: string;
+  first_name: string;
+  last_name: string;
+  preferred_name: string | null;
+  display_name: string;
+  role: BookingStaffRole;
+}
+
 export interface Booking {
   id: string;
   org_id: string;
@@ -19,8 +33,7 @@ export interface Booking {
   assigned_worker_id: string | null;
   assigned_worker_name: string | null;
   /** All assigned staff (many-to-many via staff_bookings). */
-  staff_ids: string[];
-  staff_names: string[];
+  staff: BookingStaff[];
   support_category: string | null;
   location_address: string | null;
   location_source: "participant" | "override";
@@ -61,7 +74,7 @@ export function useBookings(range?: { from?: string; to?: string }) {
     queryFn: async () => {
       let q = (supabase as any)
         .from("bookings")
-        .select("*, participants(name, address), staff_bookings(staff:staff_id(id, first_name, last_name, preferred_name))")
+        .select("*, participants(name, address), staff_bookings(id, role, staff:staff_id(id, first_name, last_name, preferred_name))")
         .eq("org_id", orgId)
         .order("starts_at", { ascending: true });
       if (range?.from) q = q.gte("starts_at", range.from);
@@ -69,20 +82,31 @@ export function useBookings(range?: { from?: string; to?: string }) {
       const { data, error } = await q;
       if (error) throw error;
       return (data ?? []).map((b: any) => {
-        const sb: Array<{ staff: any }> = b.staff_bookings ?? [];
-        const staff_ids = sb.map((row) => row.staff?.id).filter(Boolean) as string[];
-        const staff_names = sb
-          .map((row) =>
-            row.staff
-              ? `${row.staff.preferred_name?.trim() || row.staff.first_name} ${row.staff.last_name}`.trim()
-              : null
-          )
-          .filter(Boolean) as string[];
+        const sb: Array<{ id: string; role: BookingStaffRole; staff: any }> = b.staff_bookings ?? [];
+        const staff: BookingStaff[] = sb
+          .filter((row) => row.staff)
+          .map((row) => {
+            const first = row.staff.preferred_name?.trim() || row.staff.first_name;
+            return {
+              link_id: row.id,
+              staff_id: row.staff.id,
+              first_name: row.staff.first_name,
+              last_name: row.staff.last_name,
+              preferred_name: row.staff.preferred_name ?? null,
+              display_name: `${first} ${row.staff.last_name}`.trim(),
+              role: row.role,
+            };
+          })
+          // Stable order: primary first, then support/shadow/observer, then by name.
+          .sort((a, b) => {
+            const rank = (r: BookingStaffRole) =>
+              r === "primary" ? 0 : r === "support" ? 1 : r === "shadow" ? 2 : 3;
+            return rank(a.role) - rank(b.role) || a.display_name.localeCompare(b.display_name);
+          });
         return {
           ...b,
           participant_name: b.participants?.name,
-          staff_ids,
-          staff_names,
+          staff,
         };
       }) as Booking[];
     },
