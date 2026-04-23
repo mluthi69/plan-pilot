@@ -18,6 +18,11 @@ export interface Booking {
   participant_name?: string;
   assigned_worker_id: string | null;
   assigned_worker_name: string | null;
+  staff_id: string | null;
+  staff_name?: string;
+  support_category: string | null;
+  location_address: string | null;
+  location_source: "participant" | "override";
   service_type: string;
   support_item_code: string | null;
   starts_at: string;
@@ -34,6 +39,10 @@ export interface BookingInput {
   participant_id: string;
   assigned_worker_id?: string | null;
   assigned_worker_name?: string | null;
+  staff_id?: string | null;
+  support_category?: string | null;
+  location_address?: string | null;
+  location_source?: "participant" | "override";
   service_type: string;
   support_item_code?: string | null;
   starts_at: string;
@@ -50,7 +59,7 @@ export function useBookings(range?: { from?: string; to?: string }) {
     queryFn: async () => {
       let q = (supabase as any)
         .from("bookings")
-        .select("*, participants(name)")
+        .select("*, participants(name, address), staff(first_name, last_name, preferred_name)")
         .eq("org_id", orgId)
         .order("starts_at", { ascending: true });
       if (range?.from) q = q.gte("starts_at", range.from);
@@ -60,6 +69,9 @@ export function useBookings(range?: { from?: string; to?: string }) {
       return (data ?? []).map((b: any) => ({
         ...b,
         participant_name: b.participants?.name,
+        staff_name: b.staff
+          ? `${b.staff.preferred_name?.trim() || b.staff.first_name} ${b.staff.last_name}`.trim()
+          : undefined,
       })) as Booking[];
     },
   });
@@ -159,6 +171,10 @@ export function useUpdateBooking() {
           | "ends_at"
           | "assigned_worker_id"
           | "assigned_worker_name"
+          | "staff_id"
+          | "support_category"
+          | "location_address"
+          | "location_source"
           | "participant_id"
           | "service_type"
           | "location"

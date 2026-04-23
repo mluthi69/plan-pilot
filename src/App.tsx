@@ -29,6 +29,8 @@ import Documents from "./pages/Documents";
 import Reports from "./pages/Reports";
 import Invoices from "./pages/Invoices";
 import InvoiceDrafts from "./pages/InvoiceDrafts";
+import Staff from "./pages/Staff";
+import StaffDetail from "./pages/StaffDetail";
 import SignInPage from "./pages/SignIn";
 import SignUpPage from "./pages/SignUp";
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -91,6 +93,8 @@ const App = () => (
               <Route path="/my-day" element={<MyDay />} />
               <Route path="/participants" element={<Participants />} />
               <Route path="/participants/:id" element={<ParticipantDetail />} />
+              <Route path="/staff" element={<Staff />} />
+              <Route path="/staff/:id" element={<StaffDetail />} />
               <Route path="/agreements" element={<Agreements />} />
               <Route path="/invoices" element={<Invoices />} />
               <Route path="/invoices/drafts" element={<InvoiceDrafts />} />
