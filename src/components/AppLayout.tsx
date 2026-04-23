@@ -1,5 +1,6 @@
 import { Outlet } from "react-router-dom";
 import AppSidebar from "./AppSidebar";
+import MobileBottomBar from "./MobileBottomBar";
 import { Bell, Menu } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -46,10 +47,11 @@ export default function AppLayout() {
             </button>
           </div>
         </header>
-        <main className="p-4 sm:p-6">
+        <main className={`p-4 sm:p-6 ${isMobile ? "pb-24" : ""}`}>
           <Outlet />
         </main>
       </div>
+      {isMobile && <MobileBottomBar />}
     </div>
   );
 }
