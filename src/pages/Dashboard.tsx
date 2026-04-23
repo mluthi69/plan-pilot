@@ -4,6 +4,8 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useVisits } from "@/hooks/useVisits";
 import { useBookings } from "@/hooks/useBookings";
 import { useAgreements } from "@/hooks/useAgreements";
+import { useParticipants } from "@/hooks/useParticipantsDb";
+import { buildFundingWarnings } from "@/lib/funding";
 import { Calendar, ClipboardCheck, AlertTriangle, FileSignature, Plus, ArrowRight, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -25,6 +27,9 @@ export default function Dashboard() {
     to: new Date(today.getTime() + 7 * 86400000).toISOString(),
   });
   const { data: agreements = [] } = useAgreements();
+  const { data: participants = [] } = useParticipants();
+  const fundingWarnings = buildFundingWarnings(participants, agreements);
+  const criticalFunding = fundingWarnings.filter((w) => w.severity === "critical");
 
   // Alert builders
   const unsubmittedNotes = todayVisits.filter((v) => v.status === "completed" && !v.notes_submitted);
@@ -74,7 +79,7 @@ export default function Dashboard() {
         <SnapshotTile label="Today's visits" value={todayVisits.length} icon={ClipboardCheck} to="/visits" />
         <SnapshotTile label="Unsubmitted notes" value={unsubmittedNotes.length} icon={ClipboardCheck} tone={unsubmittedNotes.length > 0 ? "warn" : "ok"} to="/visits" />
         <SnapshotTile label="Unallocated this week" value={unallocated.length} icon={Calendar} tone={unallocated.length > 0 ? "warn" : "ok"} to="/schedule" />
-        <SnapshotTile label="Expiring agreements" value={expiringAgreements.length} icon={FileSignature} tone={expiringAgreements.length > 0 ? "warn" : "ok"} to="/agreements" />
+        <SnapshotTile label="Funding warnings" value={fundingWarnings.length} icon={AlertTriangle} tone={fundingWarnings.length > 0 ? "warn" : "ok"} to="/participants" />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
@@ -130,8 +135,20 @@ export default function Dashboard() {
               text={`${expiringAgreements.length} agreement${expiringAgreements.length === 1 ? "" : "s"} expiring within 30 days`}
               to="/agreements"
             />
+            {criticalFunding.slice(0, 3).map((w) => (
+              <li key={w.participantId}>
+                <Link to={`/participants/${w.participantId}`} className="flex items-start gap-2 px-4 py-2.5 text-sm hover:bg-muted/50">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+                  <span className="text-foreground">
+                    <span className="font-medium">{w.participantName}</span>
+                    <span className="ml-1 text-muted-foreground">— {w.message}</span>
+                  </span>
+                  <ArrowRight className="ml-auto mt-0.5 h-3.5 w-3.5 text-muted-foreground" />
+                </Link>
+              </li>
+            ))}
           </ul>
-          {unsubmittedNotes.length === 0 && unsignedVisits.length === 0 && unallocated.length === 0 && expiringAgreements.length === 0 && (
+          {unsubmittedNotes.length === 0 && unsignedVisits.length === 0 && unallocated.length === 0 && expiringAgreements.length === 0 && criticalFunding.length === 0 && (
             <div className="px-4 py-8 text-center text-sm text-muted-foreground">All clear. 🎉</div>
           )}
         </section>
