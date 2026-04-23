@@ -196,7 +196,6 @@ export function useUpdateBooking() {
           | "ends_at"
           | "assigned_worker_id"
           | "assigned_worker_name"
-          | "staff_id"
           | "support_category"
           | "location_address"
           | "location_source"
