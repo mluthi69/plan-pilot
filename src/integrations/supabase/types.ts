@@ -44,6 +44,105 @@ export type Database = {
         }
         Relationships: []
       }
+      attachments: {
+        Row: {
+          created_at: string
+          filename: string
+          id: string
+          mime_type: string | null
+          note_id: string | null
+          org_id: string
+          participant_id: string | null
+          size_bytes: number | null
+          storage_path: string
+          uploaded_by: string | null
+          visit_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          filename: string
+          id?: string
+          mime_type?: string | null
+          note_id?: string | null
+          org_id: string
+          participant_id?: string | null
+          size_bytes?: number | null
+          storage_path: string
+          uploaded_by?: string | null
+          visit_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          filename?: string
+          id?: string
+          mime_type?: string | null
+          note_id?: string | null
+          org_id?: string
+          participant_id?: string | null
+          size_bytes?: number | null
+          storage_path?: string
+          uploaded_by?: string | null
+          visit_id?: string | null
+        }
+        Relationships: []
+      }
+      bookings: {
+        Row: {
+          assigned_worker_id: string | null
+          assigned_worker_name: string | null
+          cancellation_reason: string | null
+          created_at: string
+          created_by: string | null
+          ends_at: string
+          id: string
+          location: string | null
+          notes: string | null
+          org_id: string
+          participant_id: string
+          service_type: string
+          starts_at: string
+          status: string
+          support_item_code: string | null
+          updated_at: string
+        }
+        Insert: {
+          assigned_worker_id?: string | null
+          assigned_worker_name?: string | null
+          cancellation_reason?: string | null
+          created_at?: string
+          created_by?: string | null
+          ends_at: string
+          id?: string
+          location?: string | null
+          notes?: string | null
+          org_id: string
+          participant_id: string
+          service_type?: string
+          starts_at: string
+          status?: string
+          support_item_code?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assigned_worker_id?: string | null
+          assigned_worker_name?: string | null
+          cancellation_reason?: string | null
+          created_at?: string
+          created_by?: string | null
+          ends_at?: string
+          id?: string
+          location?: string | null
+          notes?: string | null
+          org_id?: string
+          participant_id?: string
+          service_type?: string
+          starts_at?: string
+          status?: string
+          support_item_code?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       contracts: {
         Row: {
           created_at: string
@@ -163,6 +262,51 @@ export type Database = {
           },
         ]
       }
+      notes: {
+        Row: {
+          author_id: string | null
+          author_name: string | null
+          body: string
+          created_at: string
+          id: string
+          note_type: string
+          org_id: string
+          participant_id: string
+          template_key: string | null
+          title: string | null
+          updated_at: string
+          visit_id: string | null
+        }
+        Insert: {
+          author_id?: string | null
+          author_name?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          note_type?: string
+          org_id: string
+          participant_id: string
+          template_key?: string | null
+          title?: string | null
+          updated_at?: string
+          visit_id?: string | null
+        }
+        Update: {
+          author_id?: string | null
+          author_name?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          note_type?: string
+          org_id?: string
+          participant_id?: string
+          template_key?: string | null
+          title?: string | null
+          updated_at?: string
+          visit_id?: string | null
+        }
+        Relationships: []
+      }
       participants: {
         Row: {
           address: string | null
@@ -262,6 +406,123 @@ export type Database = {
           status?: string
           updated_at?: string
           website?: string | null
+        }
+        Relationships: []
+      }
+      service_agreements: {
+        Row: {
+          approved_at: string | null
+          cancellation_policy: string | null
+          created_at: string
+          created_by: string | null
+          end_date: string
+          id: string
+          items: Json
+          org_id: string
+          participant_id: string
+          start_date: string
+          status: string
+          title: string
+          total_value: number
+          travel_policy: string | null
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          cancellation_policy?: string | null
+          created_at?: string
+          created_by?: string | null
+          end_date: string
+          id?: string
+          items?: Json
+          org_id: string
+          participant_id: string
+          start_date: string
+          status?: string
+          title: string
+          total_value?: number
+          travel_policy?: string | null
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          cancellation_policy?: string | null
+          created_at?: string
+          created_by?: string | null
+          end_date?: string
+          id?: string
+          items?: Json
+          org_id?: string
+          participant_id?: string
+          start_date?: string
+          status?: string
+          title?: string
+          total_value?: number
+          travel_policy?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      visits: {
+        Row: {
+          actual_end: string | null
+          actual_start: string | null
+          booking_id: string
+          created_at: string
+          exception_reason: string | null
+          id: string
+          notes_submitted: boolean
+          org_id: string
+          participant_id: string
+          participant_signature_name: string | null
+          participant_signed: boolean
+          participant_signed_at: string | null
+          scheduled_end: string
+          scheduled_start: string
+          status: string
+          updated_at: string
+          worker_id: string | null
+          worker_name: string | null
+        }
+        Insert: {
+          actual_end?: string | null
+          actual_start?: string | null
+          booking_id: string
+          created_at?: string
+          exception_reason?: string | null
+          id?: string
+          notes_submitted?: boolean
+          org_id: string
+          participant_id: string
+          participant_signature_name?: string | null
+          participant_signed?: boolean
+          participant_signed_at?: string | null
+          scheduled_end: string
+          scheduled_start: string
+          status?: string
+          updated_at?: string
+          worker_id?: string | null
+          worker_name?: string | null
+        }
+        Update: {
+          actual_end?: string | null
+          actual_start?: string | null
+          booking_id?: string
+          created_at?: string
+          exception_reason?: string | null
+          id?: string
+          notes_submitted?: boolean
+          org_id?: string
+          participant_id?: string
+          participant_signature_name?: string | null
+          participant_signed?: boolean
+          participant_signed_at?: string | null
+          scheduled_end?: string
+          scheduled_start?: string
+          status?: string
+          updated_at?: string
+          worker_id?: string | null
+          worker_name?: string | null
         }
         Relationships: []
       }
