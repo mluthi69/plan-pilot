@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/table";
 import StatusBadge from "@/components/StatusBadge";
 import CommunicationTimeline from "@/components/CommunicationTimeline";
+import ParticipantAddressesPanel from "@/components/locations/ParticipantAddressesPanel";
 import { useParticipant } from "@/hooks/useParticipantsDb";
 import { useBudgetCategories } from "@/hooks/useBudgetCategories";
 import { useAgreements } from "@/hooks/useAgreements";
@@ -184,6 +185,7 @@ export default function ParticipantDetail() {
           <TabsTrigger value="budget">Budget & Funding</TabsTrigger>
           <TabsTrigger value="invoices">Invoices</TabsTrigger>
           <TabsTrigger value="providers">Providers</TabsTrigger>
+          <TabsTrigger value="addresses">Addresses</TabsTrigger>
           <TabsTrigger value="notes">Notes & Activity</TabsTrigger>
           <TabsTrigger value="comms">Communications</TabsTrigger>
         </TabsList>
@@ -372,6 +374,11 @@ export default function ParticipantDetail() {
             participantPhone={participant.phone ?? ""}
             participantEmail={participant.email ?? ""}
           />
+        </TabsContent>
+
+        {/* ── Addresses ── */}
+        <TabsContent value="addresses" className="mt-4">
+          <ParticipantAddressesPanel participantId={id || ""} />
         </TabsContent>
       </Tabs>
     </div>
