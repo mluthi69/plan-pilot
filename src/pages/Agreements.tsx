@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { FileSignature, Plus } from "lucide-react";
+import { FileSignature, Plus, CheckCircle2, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAgreements } from "@/hooks/useAgreements";
+import { useAgreements, useUpdateAgreementStatus } from "@/hooks/useAgreements";
+import AgreementBuilderDialog from "@/components/AgreementBuilderDialog";
 
 const statusBadge: Record<string, string> = {
   draft: "bg-muted text-muted-foreground border-border",
@@ -13,6 +15,8 @@ const statusBadge: Record<string, string> = {
 
 export default function Agreements() {
   const { data = [], isLoading } = useAgreements();
+  const updateStatus = useUpdateAgreementStatus();
+  const [open, setOpen] = useState(false);
 
   return (
     <div className="space-y-6">
@@ -21,7 +25,7 @@ export default function Agreements() {
           <h1 className="text-2xl font-semibold">Service agreements</h1>
           <p className="mt-1 text-sm text-muted-foreground">Linked to support items, pricing, and cancellation rules.</p>
         </div>
-        <Button disabled>
+        <Button onClick={() => setOpen(true)}>
           <Plus className="mr-1.5 h-4 w-4" />
           New agreement
         </Button>
@@ -35,8 +39,12 @@ export default function Agreements() {
             <FileSignature className="h-8 w-8 text-muted-foreground" />
             <p className="text-sm font-medium">No agreements yet</p>
             <p className="max-w-sm text-xs text-muted-foreground">
-              Agreements link participants to specific support items and rates. The builder ships in Slice 2.
+              Agreements link participants to specific support items, prices, and cancellation rules.
             </p>
+            <Button size="sm" className="mt-3" onClick={() => setOpen(true)}>
+              <Plus className="mr-1.5 h-4 w-4" />
+              Create first agreement
+            </Button>
           </div>
         ) : (
           <table className="w-full text-sm">
@@ -47,6 +55,7 @@ export default function Agreements() {
                 <th className="px-5 py-2.5 text-left font-medium">Period</th>
                 <th className="px-5 py-2.5 text-right font-medium">Value</th>
                 <th className="px-5 py-2.5 text-left font-medium">Status</th>
+                <th className="px-5 py-2.5 text-left font-medium"></th>
               </tr>
             </thead>
             <tbody>
@@ -71,12 +80,25 @@ export default function Agreements() {
                       {a.status.replace("_", " ")}
                     </span>
                   </td>
+                  <td className="px-5 py-3 text-right">
+                    {a.status === "draft" && (
+                      <Button size="sm" variant="ghost" onClick={() => updateStatus.mutate({ id: a.id, status: "pending_review" })}>
+                        <Send className="mr-1 h-3.5 w-3.5" /> Send
+                      </Button>
+                    )}
+                    {a.status === "pending_review" && (
+                      <Button size="sm" variant="ghost" onClick={() => updateStatus.mutate({ id: a.id, status: "active" })}>
+                        <CheckCircle2 className="mr-1 h-3.5 w-3.5" /> Activate
+                      </Button>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         )}
       </div>
+      <AgreementBuilderDialog open={open} onOpenChange={setOpen} />
     </div>
   );
 }
