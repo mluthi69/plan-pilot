@@ -10,7 +10,7 @@ export interface Note {
   id: string;
   org_id: string;
   participant_id: string;
-  participant_name?: string;
+  participant: { id: string; name: string } | null;
   visit_id: string | null;
   author_id: string | null;
   author_name: string | null;
@@ -48,7 +48,7 @@ export function useNotes(opts?: { participantId?: string; visitId?: string }) {
       if (error) throw error;
       return (data ?? []).map((n: any) => ({
         ...n,
-        participant_name: n.participants?.name,
+        participant: n.participants ? { id: n.participant_id, name: n.participants.name } : null,
       })) as Note[];
     },
   });

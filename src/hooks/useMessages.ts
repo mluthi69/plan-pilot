@@ -12,6 +12,8 @@ export interface Message {
   id: string;
   org_id: string;
   participant_id: string;
+  /** Embedded participant (only populated by useRecentMessages). */
+  participant?: { id: string; name: string } | null;
   booking_id: string | null;
   visit_id: string | null;
   channel: MessageChannel;
