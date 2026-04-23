@@ -4,12 +4,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useParticipants } from "@/hooks/useParticipantsDb";
 import { useCreateBooking } from "@/hooks/useBookings";
 import { useStaff, staffDisplayName } from "@/hooks/useStaff";
 import { useNdisCategories } from "@/hooks/useNdisCategories";
-import { useStaffSkills } from "@/hooks/useStaffSkills";
 import { isHalfHourSlot } from "@/hooks/useStaffAvailability";
 import { toast } from "sonner";
 
@@ -42,7 +43,7 @@ export default function BookingDrawer({ open, onOpenChange, defaultDate }: Props
   const initialEnd = new Date(initialStart.getTime() + 60 * 60 * 1000);
 
   const [participantId, setParticipantId] = useState("");
-  const [staffId, setStaffId] = useState<string>("");
+  const [staffIds, setStaffIds] = useState<string[]>([]);
   const [supportCategory, setSupportCategory] = useState<string>("");
   const [serviceType, setServiceType] = useState("Personal care");
   const [startsAt, setStartsAt] = useState(toLocalInput(initialStart));
@@ -57,12 +58,9 @@ export default function BookingDrawer({ open, onOpenChange, defaultDate }: Props
       const s = snapToHalfHour(defaultDate ?? new Date());
       setStartsAt(toLocalInput(s));
       setEndsAt(toLocalInput(new Date(s.getTime() + 60 * 60 * 1000)));
+      setStaffIds([]);
     }
   }, [open, defaultDate]);
-
-  // Look up skills of the chosen staff to flag mismatch with the chosen category
-  const { data: skills = [] } = useStaffSkills(staffId || undefined);
-  const staffHasCategory = !supportCategory || !staffId || skills.some((s) => s.support_category === supportCategory);
 
   const participant = useMemo(() => participants.find((p) => p.id === participantId), [participants, participantId]);
   const derivedAddress = participant?.address ?? "";
@@ -71,6 +69,10 @@ export default function BookingDrawer({ open, onOpenChange, defaultDate }: Props
   const eligibleStaff = useMemo(() => {
     return staff.filter((s) => s.bookable && s.status === "active");
   }, [staff]);
+
+  function toggleStaff(id: string) {
+    setStaffIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -86,16 +88,17 @@ export default function BookingDrawer({ open, onOpenChange, defaultDate }: Props
       toast.error("End time must be after start time.");
       return;
     }
-    if (staffId && supportCategory && !staffHasCategory) {
-      toast.error("Selected staff is not skilled in this NDIS category.");
-      return;
-    }
+
+    // Mirror the first assigned staff into the legacy worker fields for back-compat with Visits.
+    const primary = staffIds[0]
+      ? eligibleStaff.find((s) => s.id === staffIds[0]) ?? null
+      : null;
 
     await create.mutateAsync({
       participant_id: participantId,
-      staff_id: staffId || null,
-      assigned_worker_id: staffId || null,
-      assigned_worker_name: staffId ? staffDisplayName(staff.find((s) => s.id === staffId)!) : null,
+      staff_ids: staffIds,
+      assigned_worker_id: primary?.id ?? null,
+      assigned_worker_name: primary ? staffDisplayName(primary) : null,
       support_category: supportCategory || null,
       service_type: serviceType,
       starts_at: startD.toISOString(),
