@@ -368,6 +368,16 @@ export default function ParticipantDetail() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* ── Communications ── */}
+        <TabsContent value="comms" className="mt-4">
+          <CommunicationTimeline
+            participantId={id || "P-1001"}
+            participantName={p.name}
+            participantPhone={p.phone}
+            participantEmail={p.email}
+          />
+        </TabsContent>
       </Tabs>
     </div>
   );
