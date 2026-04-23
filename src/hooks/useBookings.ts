@@ -61,20 +61,30 @@ export function useBookings(range?: { from?: string; to?: string }) {
     queryFn: async () => {
       let q = (supabase as any)
         .from("bookings")
-        .select("*, participants(name, address), staff(first_name, last_name, preferred_name)")
+        .select("*, participants(name, address), staff_bookings(staff:staff_id(id, first_name, last_name, preferred_name))")
         .eq("org_id", orgId)
         .order("starts_at", { ascending: true });
       if (range?.from) q = q.gte("starts_at", range.from);
       if (range?.to) q = q.lte("starts_at", range.to);
       const { data, error } = await q;
       if (error) throw error;
-      return (data ?? []).map((b: any) => ({
-        ...b,
-        participant_name: b.participants?.name,
-        staff_name: b.staff
-          ? `${b.staff.preferred_name?.trim() || b.staff.first_name} ${b.staff.last_name}`.trim()
-          : undefined,
-      })) as Booking[];
+      return (data ?? []).map((b: any) => {
+        const sb: Array<{ staff: any }> = b.staff_bookings ?? [];
+        const staff_ids = sb.map((row) => row.staff?.id).filter(Boolean) as string[];
+        const staff_names = sb
+          .map((row) =>
+            row.staff
+              ? `${row.staff.preferred_name?.trim() || row.staff.first_name} ${row.staff.last_name}`.trim()
+              : null
+          )
+          .filter(Boolean) as string[];
+        return {
+          ...b,
+          participant_name: b.participants?.name,
+          staff_ids,
+          staff_names,
+        };
+      }) as Booking[];
     },
   });
 }
