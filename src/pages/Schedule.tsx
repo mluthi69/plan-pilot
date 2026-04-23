@@ -31,6 +31,8 @@ type GroupBy = "worker" | "participant";
 
 interface SchedulerEvent {
   id: string;
+  /** Composite event id: `${booking_id}::${workerId}` so each lane has its own row. */
+  bookingId: string;
   title: string;
   start: Date;
   end: Date;
@@ -40,18 +42,27 @@ interface SchedulerEvent {
   raw: Booking;
 }
 
-/** Map a booking to a Kendo Scheduler data item. */
-function toEvent(b: Booking): SchedulerEvent {
-  return {
-    id: b.id,
-    title: `${b.participant_name ?? "—"} · ${b.service_type}`,
-    start: new Date(b.starts_at),
-    end: new Date(b.ends_at),
-    workerId: b.assigned_worker_id ?? b.assigned_worker_name ?? UNALLOCATED_ID,
+/**
+ * A booking can have many staff assigned. Render one Scheduler event per
+ * (booking × staff) pair so each staff lane shows the work they're on.
+ * Bookings with no staff render a single "Unallocated" event.
+ */
+function toEvents(b: Booking): SchedulerEvent[] {
+  const start = new Date(b.starts_at);
+  const end = new Date(b.ends_at);
+  const title = `${b.participant_name ?? "—"} · ${b.service_type}`;
+  const ids = b.staff_ids.length ? b.staff_ids : [UNALLOCATED_ID];
+  return ids.map((wid) => ({
+    id: `${b.id}::${wid}`,
+    bookingId: b.id,
+    title,
+    start,
+    end,
+    workerId: wid,
     participantId: b.participant_id,
     status: b.status,
     raw: b,
-  };
+  }));
 }
 
 /** Status-tinted event renderer. */
@@ -111,7 +122,7 @@ export default function Schedule() {
     [participants]
   );
 
-  const events = useMemo(() => bookings.map(toEvent), [bookings]);
+  const events = useMemo(() => bookings.flatMap(toEvents), [bookings]);
 
   const resources = useMemo(
     () => [
@@ -149,22 +160,13 @@ export default function Schedule() {
         starts_at: ev.start.toISOString(),
         ends_at: ev.end.toISOString(),
       };
-      // Drag across worker rows reassigns the booking
-      if (groupBy === "worker" && ev.workerId !== ev.raw.assigned_worker_id) {
-        const target = workerResources.find((w) => w.value === ev.workerId);
-        if (ev.workerId === UNALLOCATED_ID) {
-          patch.assigned_worker_id = null;
-          patch.assigned_worker_name = null;
-        } else if (target) {
-          patch.assigned_worker_id = ev.workerId;
-          patch.assigned_worker_name = target.text;
-        }
-      }
+      // NOTE: drag across worker lanes no longer reassigns, because a booking
+      // can have many staff. Use the booking drawer to manage the staff list.
       // Drag across participant rows reassigns the booking's participant
       if (groupBy === "participant" && ev.participantId !== ev.raw.participant_id) {
         patch.participant_id = ev.participantId;
       }
-      updateBooking.mutate({ id: ev.id, patch });
+      updateBooking.mutate({ id: ev.bookingId, patch });
     }
     // (Create/remove come through this event too — we route create to the drawer
     // for a richer form, and ignore in-Scheduler delete to keep the audit trail clean.)

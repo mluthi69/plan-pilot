@@ -10,8 +10,10 @@ Staff is a first-class entity (`public.staff`).
 - Compliance fields: ndis_worker_screening_no + screening_expiry, working_with_children_no + wwc_expiry, first_aid_expiry, drivers_licence_no, vehicle_available. WWC/screening expiry within 30 days surfaces a warn badge on the staff card.
 - PII redaction: only last4/last3 of TFN/BSB/account stored.
 
-Skills (`public.staff_skills`) link a staff member to one of the 21 NDIS PACE support categories (`public.ndis_support_categories`, code = e.g. `01_assistance_daily_life`). Proficiency is trainee|competent|expert. Bookings record `support_category` and the BookingDrawer hard-blocks if the assigned staff lacks that skill.
+Skills (`public.staff_skills`) link a staff member to one of the 21 NDIS PACE support categories (`public.ndis_support_categories`, code = e.g. `01_assistance_daily_life`). Proficiency is trainee|competent|expert. Bookings record `support_category`.
 
-Bookings link via `bookings.staff_id` (nullable; ON DELETE SET NULL). The legacy `assigned_worker_id`/`assigned_worker_name` columns are kept for back-compat and currently mirrored from `staff_id` so the Visits/Schedule UIs continue to work.
+Bookings ↔ staff is **many-to-many** via the `public.staff_bookings` link table (`booking_id`, `staff_id`, `role` ∈ primary|support|shadow|observer; UNIQUE(booking_id, staff_id); both FKs ON DELETE CASCADE). A single booking can have many staff (e.g. a 2:1 personal-care shift) and a staff member can carry many bookings. **`bookings` does NOT have a `staff_id` column.**
 
-Schedule view's worker resource rows come from `staff` (filter `bookable=true && status='active'`). All staff members appear as rows even if they have no bookings that day.
+The legacy `assigned_worker_id` / `assigned_worker_name` columns on `bookings` are kept for back-compat with the Visits flow and are populated with the **first** (primary) staff member at create time.
+
+Schedule view's worker resource rows come from `staff` (filter `bookable=true && status='active'`). All staff members appear as rows even if they have no bookings that day. A booking with N assigned staff renders N events on the Scheduler — one per staff lane, keyed by `${booking_id}::${staff_id}`. Drag across lanes does NOT reassign (use the BookingDrawer to manage the staff list); time/resize edits still write back to the single booking row.

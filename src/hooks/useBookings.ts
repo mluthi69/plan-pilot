@@ -18,8 +18,9 @@ export interface Booking {
   participant_name?: string;
   assigned_worker_id: string | null;
   assigned_worker_name: string | null;
-  staff_id: string | null;
-  staff_name?: string;
+  /** All assigned staff (many-to-many via staff_bookings). */
+  staff_ids: string[];
+  staff_names: string[];
   support_category: string | null;
   location_address: string | null;
   location_source: "participant" | "override";
@@ -39,7 +40,8 @@ export interface BookingInput {
   participant_id: string;
   assigned_worker_id?: string | null;
   assigned_worker_name?: string | null;
-  staff_id?: string | null;
+  /** Optional list of staff to attach when creating the booking. */
+  staff_ids?: string[];
   support_category?: string | null;
   location_address?: string | null;
   location_source?: "participant" | "override";
@@ -59,20 +61,30 @@ export function useBookings(range?: { from?: string; to?: string }) {
     queryFn: async () => {
       let q = (supabase as any)
         .from("bookings")
-        .select("*, participants(name, address), staff(first_name, last_name, preferred_name)")
+        .select("*, participants(name, address), staff_bookings(staff:staff_id(id, first_name, last_name, preferred_name))")
         .eq("org_id", orgId)
         .order("starts_at", { ascending: true });
       if (range?.from) q = q.gte("starts_at", range.from);
       if (range?.to) q = q.lte("starts_at", range.to);
       const { data, error } = await q;
       if (error) throw error;
-      return (data ?? []).map((b: any) => ({
-        ...b,
-        participant_name: b.participants?.name,
-        staff_name: b.staff
-          ? `${b.staff.preferred_name?.trim() || b.staff.first_name} ${b.staff.last_name}`.trim()
-          : undefined,
-      })) as Booking[];
+      return (data ?? []).map((b: any) => {
+        const sb: Array<{ staff: any }> = b.staff_bookings ?? [];
+        const staff_ids = sb.map((row) => row.staff?.id).filter(Boolean) as string[];
+        const staff_names = sb
+          .map((row) =>
+            row.staff
+              ? `${row.staff.preferred_name?.trim() || row.staff.first_name} ${row.staff.last_name}`.trim()
+              : null
+          )
+          .filter(Boolean) as string[];
+        return {
+          ...b,
+          participant_name: b.participants?.name,
+          staff_ids,
+          staff_names,
+        };
+      }) as Booking[];
     },
   });
 }
@@ -83,13 +95,26 @@ export function useCreateBooking() {
   return useMutation({
     mutationFn: async (input: BookingInput) => {
       if (!orgId) throw new Error("No organization");
+      const { staff_ids, ...bookingFields } = input;
       // Insert booking + matching visit in one batch.
       const { data: booking, error } = await (supabase as any)
         .from("bookings")
-        .insert({ ...input, org_id: orgId })
+        .insert({ ...bookingFields, org_id: orgId })
         .select()
         .single();
       if (error) throw error;
+
+      // Attach assigned staff via the link table (many-to-many).
+      if (staff_ids && staff_ids.length) {
+        const rows = staff_ids.map((sid, i) => ({
+          org_id: orgId,
+          booking_id: booking.id,
+          staff_id: sid,
+          role: i === 0 ? "primary" : "support",
+        }));
+        const { error: linkErr } = await (supabase as any).from("staff_bookings").insert(rows);
+        if (linkErr) throw linkErr;
+      }
 
       const { error: visitErr } = await (supabase as any).from("visits").insert({
         org_id: orgId,
@@ -171,7 +196,6 @@ export function useUpdateBooking() {
           | "ends_at"
           | "assigned_worker_id"
           | "assigned_worker_name"
-          | "staff_id"
           | "support_category"
           | "location_address"
           | "location_source"
