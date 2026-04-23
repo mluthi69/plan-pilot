@@ -412,6 +412,42 @@ export type Database = {
         }
         Relationships: []
       }
+      plan_budget_categories: {
+        Row: {
+          budget: number
+          code: string
+          created_at: string
+          id: string
+          name: string
+          org_id: string
+          participant_id: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          budget?: number
+          code?: string
+          created_at?: string
+          id?: string
+          name: string
+          org_id: string
+          participant_id: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          budget?: number
+          code?: string
+          created_at?: string
+          id?: string
+          name?: string
+          org_id?: string
+          participant_id?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       providers: {
         Row: {
           abn: string
