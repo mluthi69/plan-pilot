@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useOrg } from "@/hooks/useOrg";
+import { useOrgId } from "@/hooks/useOrg";
 import { toast } from "sonner";
 
 export type EmploymentType = "full_time" | "part_time" | "casual" | "contractor";
@@ -46,7 +46,7 @@ export interface Staff {
 export type StaffInput = Omit<Staff, "id" | "org_id" | "created_at" | "updated_at">;
 
 export function useStaff() {
-  const { orgId } = useOrg();
+  const orgId = useOrgId();
   return useQuery({
     queryKey: ["staff", orgId],
     enabled: !!orgId,
@@ -80,7 +80,7 @@ export function useStaffMember(id: string | undefined) {
 
 export function useCreateStaff() {
   const qc = useQueryClient();
-  const { orgId } = useOrg();
+  const orgId = useOrgId();
   return useMutation({
     mutationFn: async (input: StaffInput) => {
       if (!orgId) throw new Error("Missing organisation");
