@@ -13,6 +13,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import StatusBadge from "@/components/StatusBadge";
+import CommunicationTimeline from "@/components/CommunicationTimeline";
 
 // ── Mock data keyed by participant id ──────────────────────────────────
 const participantData: Record<string, any> = {
@@ -172,6 +173,7 @@ export default function ParticipantDetail() {
           <TabsTrigger value="invoices">Invoices</TabsTrigger>
           <TabsTrigger value="providers">Providers</TabsTrigger>
           <TabsTrigger value="notes">Notes & Activity</TabsTrigger>
+          <TabsTrigger value="comms">Communications</TabsTrigger>
         </TabsList>
 
         {/* ── Budget ── */}
