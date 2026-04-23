@@ -104,7 +104,7 @@ export default function Exceptions() {
         .map((i) => ({
           id: i.id,
           label: `${i.invoice_number} — $${Number(i.amount).toFixed(2)}`,
-          sub: `${i.participant_name ?? "—"} · ${i.status}`,
+          sub: `${i.participant?.name ?? "—"} · ${i.status}`,
           to: `/invoices`,
         })),
     },

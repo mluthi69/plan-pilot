@@ -65,7 +65,7 @@ export default function Agreements() {
                   <td className="px-5 py-3 text-muted-foreground">
                     {a.participant_id ? (
                       <Link to={`/participants/${a.participant_id}`} className="hover:underline">
-                        {a.participant_name ?? a.participant_id}
+                        {a.participant?.name ?? a.participant_id}
                       </Link>
                     ) : "—"}
                   </td>

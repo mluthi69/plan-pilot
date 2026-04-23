@@ -67,7 +67,7 @@ export function buildClaimCsv(rows: ClaimRow[]): string {
       unit.toFixed(2),
       "P2", // GST-free
       "Standard",
-      inv.provider_abn ?? "",
+      inv.provider?.abn ?? "",
     ].map(csvCell);
     out.push(line.join(","));
   }

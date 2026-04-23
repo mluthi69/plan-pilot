@@ -209,7 +209,7 @@ export default function ProviderDetail() {
                   {invoices.map((inv) => (
                     <tr key={inv.id} className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
                       <td className="px-5 py-3 font-medium text-card-foreground">{inv.invoice_number}</td>
-                      <td className="px-5 py-3 text-muted-foreground">{inv.participant_name ?? "—"}</td>
+                      <td className="px-5 py-3 text-muted-foreground">{inv.participant?.name ?? "—"}</td>
                       <td className="px-5 py-3"><span className="rounded bg-muted px-1.5 py-0.5 text-[11px] text-muted-foreground">{inv.category}</span></td>
                       <td className="px-5 py-3 text-right font-medium text-card-foreground">${Number(inv.amount).toLocaleString("en-AU", { minimumFractionDigits: 2 })}</td>
                       <td className="px-5 py-3 text-muted-foreground">{new Date(inv.received_at).toLocaleDateString("en-AU")}</td>
