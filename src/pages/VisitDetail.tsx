@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { useVisit, useStartVisit, useEndVisit, useSignVisit } from "@/hooks/useVisits";
 import { useNotes } from "@/hooks/useNotes";
 import NoteComposer from "@/components/NoteComposer";
+import BookingTravelPanel from "@/components/locations/BookingTravelPanel";
 
 const statusBadge: Record<string, string> = {
   scheduled: "bg-info/10 text-info border-info/30",
@@ -125,6 +126,12 @@ export default function VisitDetail() {
             ))}
           </ul>
         )}
+      </section>
+
+      {/* Travel & claim lines */}
+      <section>
+        <h2 className="mb-2 text-sm font-semibold">Travel</h2>
+        <BookingTravelPanel bookingId={visit.booking_id} />
       </section>
 
       {/* Acknowledgement */}
