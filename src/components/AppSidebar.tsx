@@ -16,6 +16,7 @@ import {
   Search,
   Shield,
   Plus,
+  HardHat,
 } from "lucide-react";
 
 type NavItem = {
@@ -38,6 +39,7 @@ const navSections: { label: string; items: NavItem[] }[] = [
     label: "People",
     items: [
       { to: "/participants", icon: Users, label: "Participants" },
+      { to: "/staff", icon: HardHat, label: "Staff", roles: ["coordinator"] },
     ],
   },
   {
