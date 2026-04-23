@@ -36,8 +36,8 @@ export default function Invoices() {
   const filtered = invoices.filter(
     (inv) =>
       inv.invoice_number.toLowerCase().includes(search.toLowerCase()) ||
-      (inv.provider_name ?? "").toLowerCase().includes(search.toLowerCase()) ||
-      (inv.participant_name ?? "").toLowerCase().includes(search.toLowerCase())
+      (inv.provider?.name ?? "").toLowerCase().includes(search.toLowerCase()) ||
+      (inv.participant?.name ?? "").toLowerCase().includes(search.toLowerCase())
   );
 
   const approvedReady = filtered.filter((i) => i.status === "approved");
@@ -197,8 +197,8 @@ export default function Invoices() {
                       )}
                     </td>
                     <td className="px-5 py-3 font-mono text-xs font-medium text-card-foreground">{inv.invoice_number}</td>
-                    <td className="px-5 py-3 text-card-foreground">{inv.provider_name ?? "—"}</td>
-                    <td className="px-5 py-3 text-muted-foreground">{inv.participant_name ?? "—"}</td>
+                    <td className="px-5 py-3 text-card-foreground">{inv.provider?.name ?? "—"}</td>
+                    <td className="px-5 py-3 text-muted-foreground">{inv.participant?.name ?? "—"}</td>
                     <td className="px-5 py-3 text-xs text-muted-foreground">{inv.category}</td>
                     <td className="px-5 py-3 text-right font-medium text-card-foreground">
                       ${Number(inv.amount).toLocaleString("en-AU", { minimumFractionDigits: 2 })}
