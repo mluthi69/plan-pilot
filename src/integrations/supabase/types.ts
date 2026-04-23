@@ -262,6 +262,60 @@ export type Database = {
           },
         ]
       }
+      messages: {
+        Row: {
+          body: string
+          booking_id: string | null
+          channel: string
+          created_at: string
+          direction: string
+          id: string
+          org_id: string
+          participant_id: string
+          recipient: string | null
+          sent_by: string | null
+          sent_by_name: string | null
+          status: string
+          subject: string | null
+          template_key: string | null
+          visit_id: string | null
+        }
+        Insert: {
+          body?: string
+          booking_id?: string | null
+          channel?: string
+          created_at?: string
+          direction?: string
+          id?: string
+          org_id: string
+          participant_id: string
+          recipient?: string | null
+          sent_by?: string | null
+          sent_by_name?: string | null
+          status?: string
+          subject?: string | null
+          template_key?: string | null
+          visit_id?: string | null
+        }
+        Update: {
+          body?: string
+          booking_id?: string | null
+          channel?: string
+          created_at?: string
+          direction?: string
+          id?: string
+          org_id?: string
+          participant_id?: string
+          recipient?: string | null
+          sent_by?: string | null
+          sent_by_name?: string | null
+          status?: string
+          subject?: string | null
+          template_key?: string | null
+          visit_id?: string | null
+        }
+        Relationships: []
+      }
       notes: {
         Row: {
           author_id: string | null
