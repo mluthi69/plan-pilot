@@ -185,6 +185,7 @@ export default function ParticipantDetail() {
           <TabsTrigger value="budget">Budget & Funding</TabsTrigger>
           <TabsTrigger value="invoices">Invoices</TabsTrigger>
           <TabsTrigger value="providers">Providers</TabsTrigger>
+          <TabsTrigger value="addresses">Addresses</TabsTrigger>
           <TabsTrigger value="notes">Notes & Activity</TabsTrigger>
           <TabsTrigger value="comms">Communications</TabsTrigger>
         </TabsList>
@@ -373,6 +374,11 @@ export default function ParticipantDetail() {
             participantPhone={participant.phone ?? ""}
             participantEmail={participant.email ?? ""}
           />
+        </TabsContent>
+
+        {/* ── Addresses ── */}
+        <TabsContent value="addresses" className="mt-4">
+          <ParticipantAddressesPanel participantId={id || ""} />
         </TabsContent>
       </Tabs>
     </div>

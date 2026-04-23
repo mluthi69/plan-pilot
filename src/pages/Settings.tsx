@@ -293,6 +293,11 @@ export default function Settings() {
           </div>
         </TabsContent>
 
+        {/* Locations */}
+        <TabsContent value="locations">
+          <LocationsManager />
+        </TabsContent>
+
         {/* Integrations */}
         <TabsContent value="integrations">
           <div className="grid grid-cols-2 gap-4">
