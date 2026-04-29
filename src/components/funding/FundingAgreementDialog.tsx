@@ -4,7 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Target, ChevronDown } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import { useNdisCategories } from "@/hooks/useNdisCategories";
 import {
   useCreateFundingAgreement,
@@ -12,6 +15,12 @@ import {
   type FundingAgreement,
 } from "@/hooks/useFundingAgreements";
 import { useOrgSettings } from "@/hooks/useOrgSettings";
+import { useParticipantGoals } from "@/hooks/useGoals";
+import {
+  useAgreementGoalLinks,
+  useReplaceAgreementCategoryGoals,
+} from "@/hooks/useAgreementCategoryGoals";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
   open: boolean;
@@ -25,6 +34,7 @@ interface CategoryDraft {
   id?: string;
   support_category_code: string;
   total_amount: number;
+  goal_ids: string[];
 }
 
 export default function FundingAgreementDialog({ open, onOpenChange, participantId, agreement }: Props) {
@@ -32,7 +42,12 @@ export default function FundingAgreementDialog({ open, onOpenChange, participant
   const { data: orgSettings } = useOrgSettings();
   const create = useCreateFundingAgreement();
   const update = useUpdateFundingAgreement();
+  const replaceLinks = useReplaceAgreementCategoryGoals();
   const isEdit = !!agreement;
+
+  const { data: goals = [] } = useParticipantGoals(participantId);
+  const existingCatIds = (agreement?.categories ?? []).map((c) => c.id);
+  const { data: existingLinks = [] } = useAgreementGoalLinks(existingCatIds);
 
   const today = new Date().toISOString().slice(0, 10);
   const oneYear = new Date();
@@ -44,7 +59,9 @@ export default function FundingAgreementDialog({ open, onOpenChange, participant
   const [periodLength, setPeriodLength] = useState<number>(orgSettings?.default_period_length_months ?? 3);
   const [rolloverOverride, setRolloverOverride] = useState<"inherit" | "yes" | "no">("inherit");
   const [status, setStatus] = useState<FundingAgreement["status"]>("active");
-  const [rows, setRows] = useState<CategoryDraft[]>([{ support_category_code: "", total_amount: 0 }]);
+  const [rows, setRows] = useState<CategoryDraft[]>([
+    { support_category_code: "", total_amount: 0, goal_ids: [] },
+  ]);
 
   useEffect(() => {
     if (!open) return;
