@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Plus, Pencil, Trash2, Target } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Plus, Pencil, Trash2, Target, Link2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,8 @@ import {
   NDIS_OUTCOME_DOMAINS,
   type ParticipantGoal,
 } from "@/hooks/useGoals";
+import { useFundingAgreements } from "@/hooks/useFundingAgreements";
+import { useAgreementGoalLinks } from "@/hooks/useAgreementCategoryGoals";
 
 interface Props {
   participantId: string;
@@ -31,6 +33,32 @@ export default function ParticipantGoalsPanel({ participantId }: Props) {
   const upsert = useUpsertGoal();
   const remove = useDeleteGoal();
   const [editing, setEditing] = useState<Partial<ParticipantGoal> | null>(null);
+
+  // Resolve "this goal is linked to <NDIS code(s)>" via active agreements.
+  const { data: agreements = [] } = useFundingAgreements(participantId);
+  const agreementCategoryIds = useMemo(
+    () =>
+      agreements
+        .filter((a) => a.status === "active")
+        .flatMap((a) => a.categories.map((c) => c.id)),
+    [agreements],
+  );
+  const catCodeById = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const a of agreements) for (const c of a.categories) m.set(c.id, c.support_category_code);
+    return m;
+  }, [agreements]);
+  const { data: links = [] } = useAgreementGoalLinks(agreementCategoryIds);
+  const codesByGoal = useMemo(() => {
+    const m = new Map<string, Set<string>>();
+    for (const l of links) {
+      const code = catCodeById.get(l.agreement_category_id);
+      if (!code) continue;
+      if (!m.has(l.goal_id)) m.set(l.goal_id, new Set());
+      m.get(l.goal_id)!.add(code);
+    }
+    return m;
+  }, [links, catCodeById]);
 
   function openNew() {
     setEditing({ participant_id: participantId, title: "", status: "active" });
@@ -86,6 +114,11 @@ export default function ParticipantGoalsPanel({ participantId }: Props) {
                     {g.ndis_outcome_domain && (
                       <Badge variant="outline" className="text-[10px]">{g.ndis_outcome_domain}</Badge>
                     )}
+                    {[...(codesByGoal.get(g.id) ?? [])].map((code) => (
+                      <Badge key={code} variant="outline" className="gap-1 text-[10px] bg-primary/5 text-primary border-primary/30">
+                        <Link2 className="h-2.5 w-2.5" /> {code}
+                      </Badge>
+                    ))}
                   </div>
                   {g.description && (
                     <p className="whitespace-pre-wrap text-xs text-muted-foreground">{g.description}</p>
