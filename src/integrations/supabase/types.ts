@@ -192,11 +192,14 @@ export type Database = {
           org_id: string
           participant_address_id: string | null
           participant_id: string
+          quantity: number | null
           service_type: string
           starts_at: string
           status: string
           support_category: string | null
           support_item_code: string | null
+          unit: string | null
+          unit_price: number | null
           updated_at: string
         }
         Insert: {
@@ -216,11 +219,14 @@ export type Database = {
           org_id: string
           participant_address_id?: string | null
           participant_id: string
+          quantity?: number | null
           service_type?: string
           starts_at: string
           status?: string
           support_category?: string | null
           support_item_code?: string | null
+          unit?: string | null
+          unit_price?: number | null
           updated_at?: string
         }
         Update: {
@@ -240,11 +246,14 @@ export type Database = {
           org_id?: string
           participant_address_id?: string | null
           participant_id?: string
+          quantity?: number | null
           service_type?: string
           starts_at?: string
           status?: string
           support_category?: string | null
           support_item_code?: string | null
+          unit?: string | null
+          unit_price?: number | null
           updated_at?: string
         }
         Relationships: [
@@ -325,6 +334,136 @@ export type Database = {
           },
         ]
       }
+      funding_agreement_categories: {
+        Row: {
+          agreement_id: string
+          created_at: string
+          id: string
+          org_id: string
+          support_category_code: string
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          agreement_id: string
+          created_at?: string
+          id?: string
+          org_id: string
+          support_category_code: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          agreement_id?: string
+          created_at?: string
+          id?: string
+          org_id?: string
+          support_category_code?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funding_agreement_categories_agreement_id_fkey"
+            columns: ["agreement_id"]
+            isOneToOne: false
+            referencedRelation: "funding_agreements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      funding_agreements: {
+        Row: {
+          allow_unspent_rollover: boolean | null
+          created_at: string
+          created_by: string | null
+          end_date: string
+          id: string
+          notes: string | null
+          org_id: string
+          participant_id: string
+          period_length_months: number
+          start_date: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          allow_unspent_rollover?: boolean | null
+          created_at?: string
+          created_by?: string | null
+          end_date: string
+          id?: string
+          notes?: string | null
+          org_id: string
+          participant_id: string
+          period_length_months?: number
+          start_date: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          allow_unspent_rollover?: boolean | null
+          created_at?: string
+          created_by?: string | null
+          end_date?: string
+          id?: string
+          notes?: string | null
+          org_id?: string
+          participant_id?: string
+          period_length_months?: number
+          start_date?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      funding_periods: {
+        Row: {
+          agreement_category_id: string
+          allocated_amount: number
+          created_at: string
+          id: string
+          org_id: string
+          period_end: string
+          period_index: number
+          period_start: string
+          updated_at: string
+        }
+        Insert: {
+          agreement_category_id: string
+          allocated_amount?: number
+          created_at?: string
+          id?: string
+          org_id: string
+          period_end: string
+          period_index: number
+          period_start: string
+          updated_at?: string
+        }
+        Update: {
+          agreement_category_id?: string
+          allocated_amount?: number
+          created_at?: string
+          id?: string
+          org_id?: string
+          period_end?: string
+          period_index?: number
+          period_start?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funding_periods_agreement_category_id_fkey"
+            columns: ["agreement_category_id"]
+            isOneToOne: false
+            referencedRelation: "funding_agreement_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       geocode_cache: {
         Row: {
           address_hash: string
@@ -358,6 +497,57 @@ export type Database = {
           lng?: number
           place_id?: string | null
           raw_address?: string
+        }
+        Relationships: []
+      }
+      invoice_lines: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          evidence_pack_token: string
+          id: string
+          invoice_id: string
+          org_id: string
+          quantity: number
+          support_category_code: string | null
+          support_item_code: string | null
+          unit: string
+          unit_price: number
+          updated_at: string
+          visit_id: string | null
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          evidence_pack_token?: string
+          id?: string
+          invoice_id: string
+          org_id: string
+          quantity?: number
+          support_category_code?: string | null
+          support_item_code?: string | null
+          unit?: string
+          unit_price?: number
+          updated_at?: string
+          visit_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          evidence_pack_token?: string
+          id?: string
+          invoice_id?: string
+          org_id?: string
+          quantity?: number
+          support_category_code?: string | null
+          support_item_code?: string | null
+          unit?: string
+          unit_price?: number
+          updated_at?: string
+          visit_id?: string | null
         }
         Relationships: []
       }
@@ -641,6 +831,36 @@ export type Database = {
           },
         ]
       }
+      org_settings: {
+        Row: {
+          allow_unspent_rollover: boolean
+          created_at: string
+          default_period_length_months: number
+          org_id: string
+          require_geo_checkin: boolean
+          require_goal_contribution: boolean
+          updated_at: string
+        }
+        Insert: {
+          allow_unspent_rollover?: boolean
+          created_at?: string
+          default_period_length_months?: number
+          org_id: string
+          require_geo_checkin?: boolean
+          require_goal_contribution?: boolean
+          updated_at?: string
+        }
+        Update: {
+          allow_unspent_rollover?: boolean
+          created_at?: string
+          default_period_length_months?: number
+          org_id?: string
+          require_geo_checkin?: boolean
+          require_goal_contribution?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       participant_addresses: {
         Row: {
           address: string
@@ -699,6 +919,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      participant_goals: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          ndis_outcome_domain: string | null
+          org_id: string
+          participant_id: string
+          sort_order: number
+          status: string
+          target_date: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          ndis_outcome_domain?: string | null
+          org_id: string
+          participant_id: string
+          sort_order?: number
+          status?: string
+          target_date?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          ndis_outcome_domain?: string | null
+          org_id?: string
+          participant_id?: string
+          sort_order?: number
+          status?: string
+          target_date?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       participants: {
         Row: {
@@ -1221,6 +1483,83 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "ndis_support_categories"
             referencedColumns: ["code"]
+          },
+        ]
+      }
+      visit_geo_fixes: {
+        Row: {
+          accuracy_m: number | null
+          captured_at: string
+          captured_by: string | null
+          id: string
+          kind: string
+          lat: number
+          lng: number
+          org_id: string
+          visit_id: string
+        }
+        Insert: {
+          accuracy_m?: number | null
+          captured_at?: string
+          captured_by?: string | null
+          id?: string
+          kind?: string
+          lat: number
+          lng: number
+          org_id: string
+          visit_id: string
+        }
+        Update: {
+          accuracy_m?: number | null
+          captured_at?: string
+          captured_by?: string | null
+          id?: string
+          kind?: string
+          lat?: number
+          lng?: number
+          org_id?: string
+          visit_id?: string
+        }
+        Relationships: []
+      }
+      visit_goal_contributions: {
+        Row: {
+          contribution_note: string | null
+          created_at: string
+          created_by: string | null
+          goal_id: string
+          id: string
+          org_id: string
+          progress_rating: number | null
+          visit_id: string
+        }
+        Insert: {
+          contribution_note?: string | null
+          created_at?: string
+          created_by?: string | null
+          goal_id: string
+          id?: string
+          org_id: string
+          progress_rating?: number | null
+          visit_id: string
+        }
+        Update: {
+          contribution_note?: string | null
+          created_at?: string
+          created_by?: string | null
+          goal_id?: string
+          id?: string
+          org_id?: string
+          progress_rating?: number | null
+          visit_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visit_goal_contributions_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "participant_goals"
+            referencedColumns: ["id"]
           },
         ]
       }
