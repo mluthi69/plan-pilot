@@ -1,4 +1,4 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useMemo } from "react";
 import {
   ArrowLeft, Phone, Mail, MapPin, Calendar, User, ClipboardList,
@@ -23,6 +23,8 @@ import { useBudgetCategories } from "@/hooks/useBudgetCategories";
 import { useAgreements } from "@/hooks/useAgreements";
 import { useInvoices } from "@/hooks/useInvoices";
 import { useNotes } from "@/hooks/useNotes";
+import { useBookings } from "@/hooks/useBookings";
+import { useVisits } from "@/hooks/useVisits";
 import { buildCategoryUtilisation } from "@/lib/budgetUtilisation";
 
 const budgetTypeColor: Record<string, string> = {
@@ -38,6 +40,25 @@ const noteTypeColor: Record<string, string> = {
   case: "bg-accent/10 text-accent border-accent/20",
 };
 
+const visitStatusColor: Record<string, string> = {
+  scheduled: "bg-info/10 text-info border-info/30",
+  in_progress: "bg-warning/15 text-warning border-warning/40",
+  completed: "bg-success/10 text-success border-success/30",
+  cancelled: "bg-muted text-muted-foreground border-border",
+  no_show: "bg-destructive/10 text-destructive border-destructive/30",
+};
+
+function formatDateTime(d: string | null | undefined) {
+  if (!d) return "—";
+  return new Date(d).toLocaleString("en-AU", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 function formatDate(d: string | null | undefined) {
   if (!d) return "—";
   return new Date(d).toLocaleDateString("en-AU", { day: "2-digit", month: "short", year: "numeric" });
@@ -49,11 +70,31 @@ function money(n: number) {
 
 export default function ParticipantDetail() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { data: participant, isLoading } = useParticipant(id);
   const { data: categories = [] } = useBudgetCategories(id);
   const { data: agreements = [] } = useAgreements(id);
   const { data: allInvoices = [] } = useInvoices();
   const { data: notes = [] } = useNotes({ participantId: id });
+  const { data: allBookings = [] } = useBookings();
+  const { data: allVisits = [] } = useVisits();
+
+  const now = new Date();
+  const appointments = useMemo(
+    () =>
+      allBookings
+        .filter((b) => b.participant_id === id && new Date(b.ends_at) >= now)
+        .sort((a, b) => +new Date(a.starts_at) - +new Date(b.starts_at)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [allBookings, id],
+  );
+  const participantVisits = useMemo(
+    () =>
+      allVisits
+        .filter((v) => v.participant_id === id)
+        .sort((a, b) => +new Date(b.scheduled_start) - +new Date(a.scheduled_start)),
+    [allVisits, id],
+  );
 
   const invoices = useMemo(
     () => allInvoices.filter((i) => i.participant_id === id),
@@ -187,6 +228,8 @@ export default function ParticipantDetail() {
           <TabsTrigger value="budget">Budget & Funding</TabsTrigger>
           <TabsTrigger value="funding">Funding Agreements</TabsTrigger>
           <TabsTrigger value="goals">Goals</TabsTrigger>
+          <TabsTrigger value="appointments">Appointments</TabsTrigger>
+          <TabsTrigger value="visits">Visits</TabsTrigger>
           <TabsTrigger value="invoices">Invoices</TabsTrigger>
           <TabsTrigger value="providers">Providers</TabsTrigger>
           <TabsTrigger value="addresses">Addresses</TabsTrigger>
@@ -200,6 +243,136 @@ export default function ParticipantDetail() {
 
         <TabsContent value="goals" className="mt-4">
           {id && <ParticipantGoalsPanel participantId={id} />}
+        </TabsContent>
+
+        {/* ── Appointments (upcoming bookings) ── */}
+        <TabsContent value="appointments" className="mt-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm">Upcoming Appointments</CardTitle>
+              <CardDescription>
+                Scheduled bookings for this participant. Click a row to open the linked visit.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              {appointments.length === 0 ? (
+                <p className="px-6 py-8 text-sm text-muted-foreground">No upcoming appointments.</p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>When</TableHead>
+                      <TableHead>Service</TableHead>
+                      <TableHead>Staff</TableHead>
+                      <TableHead>Location</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {appointments.map((b) => {
+                      const visit = allVisits.find((v) => v.booking_id === b.id);
+                      const href = visit ? `/visits/${visit.id}` : "#";
+                      return (
+                        <TableRow
+                          key={b.id}
+                          className={visit ? "cursor-pointer hover:bg-muted/50" : ""}
+                          onClick={() => visit && (navigate(href))}
+                        >
+                          <TableCell className="text-xs">{formatDateTime(b.starts_at)}</TableCell>
+                          <TableCell className="text-sm">
+                            {b.support_category ?? b.service_type}
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
+                            {b.staff[0]?.display_name ?? "Unallocated"}
+                            {b.staff.length > 1 && (
+                              <span className="ml-1">+{b.staff.length - 1}</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
+                            {b.resolved_location_name ?? b.location_address ?? "—"}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant="outline"
+                              className={`text-[10px] capitalize ${visitStatusColor[b.status] ?? ""}`}
+                            >
+                              {b.status.replace("_", " ")}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ── Visits (history) ── */}
+        <TabsContent value="visits" className="mt-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm">Visits</CardTitle>
+              <CardDescription>
+                All visits for this participant. Click a row to open the visit detail.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              {participantVisits.length === 0 ? (
+                <p className="px-6 py-8 text-sm text-muted-foreground">No visits recorded.</p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>When</TableHead>
+                      <TableHead>Staff</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Note</TableHead>
+                      <TableHead>Signed</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {participantVisits.map((v) => (
+                      <TableRow
+                        key={v.id}
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => (navigate(`/visits/${v.id}`))}
+                      >
+                        <TableCell className="text-xs">
+                          {formatDateTime(v.scheduled_start)}
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {v.staff[0]?.display_name ?? "Unallocated"}
+                          {v.staff.length > 1 && (
+                            <span className="ml-1">+{v.staff.length - 1}</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant="outline"
+                            className={`text-[10px] capitalize ${visitStatusColor[v.status] ?? ""}`}
+                          >
+                            {v.status.replace("_", " ")}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          <span className={v.notes_submitted ? "text-success" : "text-muted-foreground"}>
+                            {v.notes_submitted ? "✓" : "—"}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          <span className={v.participant_signed ? "text-success" : "text-muted-foreground"}>
+                            {v.participant_signed ? "✓" : "—"}
+                          </span>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* ── Budget ── */}
