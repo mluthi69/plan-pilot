@@ -17,6 +17,7 @@ import { useFundingAgreements, useFundingSpend } from "@/hooks/useFundingAgreeme
 import { useOrgSettings } from "@/hooks/useOrgSettings";
 import { computeAvailable, findPeriodFor, hoursBetween } from "@/lib/fundingPeriods";
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
+import { DateTimePicker } from "@progress/kendo-react-dateinputs";
 
 interface Props {
   open: boolean;
@@ -32,11 +33,6 @@ function snapToHalfHour(d: Date): Date {
   return r;
 }
 
-function toLocalInput(d: Date): string {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
 export default function BookingDrawer({ open, onOpenChange, defaultDate }: Props) {
   const { data: participants = [] } = useParticipants();
   const { data: staff = [] } = useStaff();
@@ -49,8 +45,11 @@ export default function BookingDrawer({ open, onOpenChange, defaultDate }: Props
   const [participantId, setParticipantId] = useState("");
   const [staffIds, setStaffIds] = useState<string[]>([]);
   const [supportCategory, setSupportCategory] = useState<string>("");
-  const [startsAt, setStartsAt] = useState(toLocalInput(initialStart));
-  const [endsAt, setEndsAt] = useState(toLocalInput(initialEnd));
+  const [startsAt, setStartsAt] = useState<Date>(initialStart);
+  const [endsAt, setEndsAt] = useState<Date>(initialEnd);
+  // Track whether the user has manually overridden the end time so we
+  // stop auto-snapping it to start + 1h.
+  const [endTouched, setEndTouched] = useState(false);
   const [unitPrice, setUnitPrice] = useState<string>("");
   const [location, setLocation] = useState<ResolvedLocation>({
     location_kind: "participant_address",
@@ -66,8 +65,9 @@ export default function BookingDrawer({ open, onOpenChange, defaultDate }: Props
   useEffect(() => {
     if (open) {
       const s = snapToHalfHour(defaultDate ?? new Date());
-      setStartsAt(toLocalInput(s));
-      setEndsAt(toLocalInput(new Date(s.getTime() + 60 * 60 * 1000)));
+      setStartsAt(s);
+      setEndsAt(new Date(s.getTime() + 60 * 60 * 1000));
+      setEndTouched(false);
       setStaffIds([]);
       setLocation({
         location_kind: "participant_address",
