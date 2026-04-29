@@ -1,125 +1,133 @@
 
+# Evidence Pack & Funding-Aware Invoicing
 
-## Phase 1: Staff, Skills, Availability & Bookings link
+This is a large feature spanning goals, appointment evidence, funding-period budgets, booking-time funding checks, batch draft invoice generation, and a public Evidence Pack report. I propose phasing it so each phase is shippable and testable.
 
-Foundational data model and UI for staff who can be booked to deliver NDIS services to participants. Routing/travel and Timefold optimisation are deferred to Phase 2/3.
+## Phase 1 — Participant Goals & Appointment Goal Tracking
 
-### What you'll get
+**New tables**
+- `participant_goals` — `id, org_id, participant_id, title, description, ndis_outcome_domain, status (active/achieved/discontinued), target_date, sort_order`
+- `visit_goal_contributions` — `id, org_id, visit_id, goal_id, contribution_note, progress_rating (1–5), created_at, created_by`
 
-- A new **Staff** first-class entity with full Australian employee fields and a "bookable" flag
-- **Skills** = the 21 NDIS PACE support categories a staff member is qualified for
-- **Availability** stored as recurring weekly patterns + one-off exceptions (covers FT and PT)
-- **Bookings** linked to a staff member (replacing the loose `assigned_worker_name` text), with a derived-but-overridable location
-- A **Staff** management section, a per-staff detail page (skills + availability editor), and the existing Schedule page now grouped by real staff records
+**UI**
+- New "Goals" tab on `ParticipantDetail` to CRUD goals.
+- `BookingDrawer`: multi-select goals to target during this appointment (writes pending goal links on visit creation).
+- `VisitDetail`: "Goal contributions" panel — each linked goal gets a rating + free-text note. Required before marking visit complete.
 
-### Database schema (new tables)
+## Phase 2 — Evidence Pack on Visits
 
-```text
-staff
-├── id, org_id
-├── first_name, last_name, preferred_name, email, phone, mobile
-├── address, suburb, state, postcode
-├── date_of_birth, gender
-├── employment_type        ('full_time'|'part_time'|'casual'|'contractor')
-├── contracted_hours_per_week numeric         -- for FT/PT capacity checks
-├── start_date, end_date
-├── tfn_last4, super_fund, bank_bsb_last3, bank_acct_last3   (PII redacted)
-├── ndis_worker_screening_no, screening_expiry
-├── working_with_children_no, wwc_expiry
-├── first_aid_expiry, drivers_licence_no, vehicle_available bool
-├── bookable bool default true                -- THE flag
-├── status ('active'|'on_leave'|'inactive') default 'active'
-├── notes, created_at, updated_at
+Evidence pack = staff-captured proof during a visit. Builds on existing `attachments`, `notes`, and `visits.participant_signed`.
 
-staff_skills        -- which NDIS PACE categories a staff member can deliver
-├── id, org_id
-├── staff_id  (fk staff.id)
-├── support_category text   -- one of 21 PACE codes (enum-validated via trigger)
-├── proficiency ('trainee'|'competent'|'expert') default 'competent'
-├── certified_at date, expires_at date
-├── unique (staff_id, support_category)
+**New table**
+- `visit_geo_fixes` — `id, org_id, visit_id, kind (check_in/check_out/midpoint), lat, lng, accuracy_m, captured_at, captured_by`
 
-staff_availability  -- recurring weekly pattern
-├── id, org_id, staff_id
-├── day_of_week smallint 0-6 (0 = Sunday)
-├── starts_time time, ends_time time
-├── effective_from date, effective_to date    -- nullable = open-ended
-├── kind ('available'|'unavailable') default 'available'
+**UI changes on `VisitDetail`**
+- "Check in" button captures geolocation → `visit_geo_fixes` + sets `actual_start`.
+- "Check out" button mirrors at end.
+- Existing photo/file uploads stay in `attachments`.
+- Notes panel gains an **AI-assist** button (Lovable AI, `google/gemini-3-flash-preview`) that drafts a progress note using:
+  - Participant's recent note history
+  - Service type + support category
+  - Selected goals + contribution ratings
+  - Returns a draft the worker edits and saves.
+- New "Evidence pack" summary card on the visit showing geo fixes count, photos count, notes count, signature, goal contributions — visual completeness checklist.
 
-staff_availability_exception   -- one-off PTO, sick, extra shift
-├── id, org_id, staff_id
-├── starts_at timestamptz, ends_at timestamptz
-├── kind ('available'|'unavailable')
-├── reason text
+## Phase 3 — Funding Agreements with Funding Periods
 
-bookings  (additive changes — existing rows preserved)
-├── + staff_id uuid                           -- nullable fk to staff.id
-├── + support_category text                   -- the PACE category being delivered
-├── + location_address text                   -- override
-├── + location_source ('participant'|'override') default 'participant'
-├── + duration_minutes generated as ((ends_at - starts_at) in min)
-├── (existing assigned_worker_id/name kept for back-compat, deprecated)
-```
+This replaces the current single-bucket budget thinking with category-level agreements split into periods.
 
-All tables use `org_id` (text, Clerk org) with the same permissive policy your other tables use today, and an `update_updated_at_column` trigger.
+**New tables**
+- `funding_agreements` — `id, org_id, participant_id, title, start_date, end_date, status (draft/active/expired/cancelled), period_length_months (default 3), allow_unspent_rollover (override of org setting, nullable)`
+- `funding_agreement_categories` — `id, agreement_id, support_category_code, total_amount`
+- `funding_periods` — generated rows: `id, agreement_category_id, period_index, period_start, period_end, allocated_amount` (auto-created when an agreement is activated; equal split unless overridden).
 
-A reference table `ndis_support_categories` (seeded with the 21 PACE categories: code + name + budget bucket Core/Capacity/Capital) backs both the Staff skill picker and the Booking category dropdown.
+**Org settings**
+- Add to a `org_settings` table (or extend existing settings storage): `allow_unspent_rollover BOOLEAN DEFAULT false`. Surfaced on `Settings` page.
 
-### Half-hour slot constraint
+**Rules enforced everywhere**
+- A booking spends from the period its date falls in.
+- If `allow_unspent_rollover` is true, leftover from earlier periods adds to the current period's available amount.
+- **Never** consume future periods.
 
-Enforced at the **input layer**, not in the DB:
-- `BookingDrawer` time pickers snap to `:00` / `:30`
-- The Kendo Scheduler is configured with `slotDuration={30}` and `slotDivisions={1}`
-- A small validator rejects non-half-hour starts/ends before insert (clear toast error)
+**UI**
+- New "Funding" tab on `ParticipantDetail` showing agreements, categories, periods, and per-period spend bars.
+- `AgreementBuilderDialog` evolves into a Funding Agreement builder with category rows + period preview.
 
-This keeps the DB flexible if you ever need 15-min slots later.
+## Phase 4 — Booking-Time Funding Check
 
-### New hooks
+**Booking changes (`bookings` table)**
+- Add `quantity NUMERIC` and `unit text` (`hours` | `each` | `km`) and `support_item_code text` (already exists) and `unit_price NUMERIC` snapshotted at booking time.
 
-- `useStaff()`, `useStaff(id)`, `useCreateStaff()`, `useUpdateStaff()`, `useDeleteStaff()`
-- `useStaffSkills(staffId)`, `useUpsertStaffSkill()`, `useRemoveStaffSkill()`
-- `useStaffAvailability(staffId)` — returns merged recurring + exceptions
-- `useUpsertAvailability()`, `useUpsertAvailabilityException()`
-- `useBookableStaffFor({ category, starts_at, ends_at })` — returns staff who (a) are `bookable && active`, (b) have the skill, (c) are available in their pattern, (d) have no overlapping booking. Pure-SQL for now, will be replaced by Timefold call later.
-- `useNdisCategories()` — reads the seed table
+**`BookingDrawer` changes**
+- Support category dropdown is **populated from the participant's active agreement**, not the global NDIS list.
+- After category select, support item code dropdown filtered to that category.
+- Quantity input (auto-derived from start/end as hh:mm for time-based items, editable).
+- Live "Funding check" panel:
+  - Reads target period from booking date.
+  - Sums committed/pending/paid spend from existing bookings + invoices in that period and category.
+  - Adds rollover from prior periods if org setting allows.
+  - Shows: `Available $X · This booking $Y · Remaining $Z` with red/amber/green badge.
+  - Hard-blocks save if booking exceeds available (unless user has override role).
 
-### New / changed pages
+**New helper**
+- `src/lib/fundingPeriods.ts` — pure functions: `findPeriodFor(date, periods)`, `computeAvailable(period, spend, rolloverEnabled, priorPeriods)`.
 
-- **`/staff`** — list page (search, filter by category/status/bookable, table). New sidebar entry under "People".
-- **`/staff/:id`** — detail page with three tabs: **Profile** (editable card), **Skills** (multi-select chips for the 21 categories with proficiency + expiry), **Availability** (weekly grid editor + exceptions list).
-- **`StaffFormDialog`** — create/edit dialog mirroring the `ProviderFormDialog` pattern.
-- **`BookingDrawer`** — replace the free-text "Assign worker" with a real `<Select>` of bookable staff filtered by chosen NDIS category and time window. Add `support_category` dropdown. Add `location_address` field that auto-fills from the participant's address with an "Override location" toggle.
-- **`/schedule`** — resource rows now come from real `staff` records (only `bookable=true, status=active`); Workers/Participants toggle stays. Drop-on-row reassign writes `staff_id`. Empty rows for staff with no bookings now still appear.
-- **Sidebar** — add **Staff** under the People section (visible to coordinator + owner roles).
+## Phase 5 — Batch Draft Invoice Generator
 
-### Validation & guard rails
+Replace the current "one button per visit" `InvoiceDrafts` flow with a batch grouped by participant.
 
-- Booking insert blocked (toast) when chosen staff lacks the support category skill
-- Booking insert blocked when staff has overlapping booking or sits outside their availability pattern (with a "book anyway" override for owner/coordinator)
-- ABN-style format checks aren't needed; instead WWC/Worker-Screening expiry warnings render on the staff card when within 30 days
+**New tables**
+- `invoice_lines` — `id, org_id, invoice_id, visit_id, support_item_code, unit, quantity, unit_price, amount, evidence_pack_token (uuid)`
 
-### Out of scope (Phase 2 + 3)
+**Edge function: `generate-draft-invoices`**
+- Triggered manually from `InvoiceDrafts` ("Generate this week") or by `pg_cron` weekly.
+- Pulls all `visits.status = 'completed'` with no existing `invoice_lines.visit_id`.
+- Validates each: notes_submitted, signature, geo fix present, goal contributions if required, agreement covers period.
+- Groups by participant → one draft `invoices` row + N `invoice_lines`.
+- Generates a per-line `evidence_pack_token` (UUID) for the magic link.
 
-- Geocoding addresses, calculating travel time between consecutive bookings, displaying route on a map
-- Timefold REST service hosted in Azure Container Apps
-- "Optimise day" button + "Suggest best slot for new booking" call
+**UI updates**
+- `InvoiceDrafts` page becomes a "Run batch" view + a list of generated draft invoices grouped by participant.
+- `Invoices` table — clicking a draft opens an invoice detail page showing each line with its "Evidence Pack" link.
 
-I'll capture these as memory entries so they aren't forgotten.
+## Phase 6 — Public Evidence Pack Report (Magic Link)
 
-### Files to create
+**Edge function: `evidence-pack`** (verify_jwt = false, token-based auth)
+- `GET /evidence-pack?token=<uuid>` → returns an HTML report (or JSON for a React renderer).
+- Joins invoice line → visit → notes, attachments (signed URLs, 24h), goal contributions, geo fixes, signature.
 
-- `supabase/migrations/<ts>_staff_entity.sql` — all new tables, trigger, seed for `ndis_support_categories`
-- `src/hooks/useStaff.ts`, `src/hooks/useStaffSkills.ts`, `src/hooks/useStaffAvailability.ts`, `src/hooks/useNdisCategories.ts`
-- `src/pages/Staff.tsx`, `src/pages/StaffDetail.tsx`
-- `src/components/StaffFormDialog.tsx`, `src/components/StaffSkillsEditor.tsx`, `src/components/StaffAvailabilityEditor.tsx`
-- `mem://domain/staff-entity` and `mem://domain/staff-availability-model`
+**New public route**
+- `/evidence/:token` — renders the report:
+  - Header: participant, period, line summary.
+  - For each appointment: time, staff, service item, hh:mm, notes, photo gallery, small Google Map with marker for geo fix, goals worked on, signature block.
+- Token only ever exposes that single line's evidence — not the whole invoice.
 
-### Files to modify
+## Phase 7 — Settings
 
-- `src/App.tsx` — add `/staff` and `/staff/:id` routes
-- `src/components/AppSidebar.tsx` — add Staff nav item
-- `src/components/BookingDrawer.tsx` — staff picker, category, location override
-- `src/hooks/useBookings.ts` — extend `BookingInput` & `Booking` types with `staff_id`, `support_category`, `location_address`, `location_source`
-- `src/pages/Schedule.tsx` — pull worker resources from `useStaff()` not from booking rows
-- `src/integrations/supabase/types.ts` — auto-regenerated by the migration
+**Settings page additions**
+- Toggle: "Allow unspent funding to roll over to next period" (org-wide default).
+- Toggle: "Require geo check-in for visit completion".
+- Toggle: "Require goal contribution before visit completion".
+- Number: "Default funding period length (months)" — default 3.
 
+---
+
+## Technical notes
+
+- **AI note assist**: edge function `draft-visit-note` calls Lovable AI Gateway (`google/gemini-3-flash-preview`) with a structured prompt; never call from the client.
+- **Funding math** lives in `src/lib/fundingPeriods.ts` and is mirrored server-side inside `generate-draft-invoices` so the batch revalidates rather than trusting client state.
+- **Rollover rule**: `available(period_n) = allocated(period_n) + (rolloverEnabled ? Σ unspent(period_<n) : 0) − spent(period_n)`. Future periods never contribute.
+- **Magic link security**: tokens are random UUIDs, single-line scope, no enumeration. Report is read-only.
+- **Migrations only for schema.** Period rows and rollover state are computed on demand or generated by trigger when an agreement is activated.
+
+## Suggested build order
+
+I recommend we approve the plan as a whole but build in this order, each as its own follow-up:
+
+1. Phase 3 (Funding Agreements + Periods) + Phase 7 settings — foundation.
+2. Phase 4 (Booking funding check) — immediately useful, prevents overspend.
+3. Phase 1 (Goals) + Phase 2 (Evidence pack capture).
+4. Phase 5 (Batch draft invoice generator).
+5. Phase 6 (Public Evidence Pack report).
+
+Reply with which phase to start on (or "all in order") and I'll begin implementation.
