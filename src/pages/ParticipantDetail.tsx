@@ -16,6 +16,7 @@ import {
 import StatusBadge from "@/components/StatusBadge";
 import CommunicationTimeline from "@/components/CommunicationTimeline";
 import ParticipantAddressesPanel from "@/components/locations/ParticipantAddressesPanel";
+import ParticipantFundingPanel from "@/components/funding/ParticipantFundingPanel";
 import { useParticipant } from "@/hooks/useParticipantsDb";
 import { useBudgetCategories } from "@/hooks/useBudgetCategories";
 import { useAgreements } from "@/hooks/useAgreements";
