@@ -7,6 +7,7 @@ import { useVisit, useStartVisit, useEndVisit, useSignVisit } from "@/hooks/useV
 import { useNotes } from "@/hooks/useNotes";
 import NoteComposer from "@/components/NoteComposer";
 import BookingTravelPanel from "@/components/locations/BookingTravelPanel";
+import VisitEvidencePanel from "@/components/visits/VisitEvidencePanel";
 
 const statusBadge: Record<string, string> = {
   scheduled: "bg-info/10 text-info border-info/30",
@@ -26,6 +27,7 @@ export default function VisitDetail() {
   const sign = useSignVisit();
   const [signName, setSignName] = useState("");
   const [showNote, setShowNote] = useState(false);
+  const [aiDraft, setAiDraft] = useState<string | null>(null);
 
   if (isLoading || !visit) {
     return <div className="py-12 text-center text-sm text-muted-foreground">Loading…</div>;
@@ -100,9 +102,23 @@ export default function VisitDetail() {
         <NoteComposer
           participantId={visit.participant_id}
           visitId={visit.id}
+          initialBody={aiDraft ?? undefined}
           onSaved={() => setShowNote(false)}
         />
       )}
+
+      {/* Evidence: geo + goals + AI */}
+      <section>
+        <h2 className="mb-2 text-sm font-semibold">Evidence pack</h2>
+        <VisitEvidencePanel
+          visitId={visit.id}
+          participantId={visit.participant_id}
+          onAiNote={(body) => {
+            setAiDraft(body);
+            setShowNote(true);
+          }}
+        />
+      </section>
 
       {/* Existing notes */}
       <section>

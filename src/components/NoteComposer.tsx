@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,17 +11,24 @@ interface Props {
   visitId?: string;
   onSaved?: () => void;
   defaultType?: NoteType;
+  /** Optional pre-filled body (e.g. AI-generated draft). */
+  initialBody?: string;
 }
 
-export default function NoteComposer({ participantId, visitId, onSaved, defaultType = "progress" }: Props) {
+export default function NoteComposer({ participantId, visitId, onSaved, defaultType = "progress", initialBody }: Props) {
   const create = useCreateNote();
   const upload = useUploadAttachment();
   const { data: attachments = [] } = useVisitAttachments(visitId);
   const [type, setType] = useState<NoteType>(defaultType);
   const [templateKey, setTemplateKey] = useState<string>("");
   const [title, setTitle] = useState("");
-  const [body, setBody] = useState("");
+  const [body, setBody] = useState(initialBody ?? "");
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+
+  // Sync body when an AI draft is supplied/changed by the parent.
+  useEffect(() => {
+    if (initialBody !== undefined) setBody(initialBody);
+  }, [initialBody]);
 
   function applyTemplate(key: string) {
     setTemplateKey(key);

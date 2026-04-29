@@ -17,6 +17,7 @@ import StatusBadge from "@/components/StatusBadge";
 import CommunicationTimeline from "@/components/CommunicationTimeline";
 import ParticipantAddressesPanel from "@/components/locations/ParticipantAddressesPanel";
 import ParticipantFundingPanel from "@/components/funding/ParticipantFundingPanel";
+import ParticipantGoalsPanel from "@/components/goals/ParticipantGoalsPanel";
 import { useParticipant } from "@/hooks/useParticipantsDb";
 import { useBudgetCategories } from "@/hooks/useBudgetCategories";
 import { useAgreements } from "@/hooks/useAgreements";
@@ -185,6 +186,7 @@ export default function ParticipantDetail() {
         <TabsList>
           <TabsTrigger value="budget">Budget & Funding</TabsTrigger>
           <TabsTrigger value="funding">Funding Agreements</TabsTrigger>
+          <TabsTrigger value="goals">Goals</TabsTrigger>
           <TabsTrigger value="invoices">Invoices</TabsTrigger>
           <TabsTrigger value="providers">Providers</TabsTrigger>
           <TabsTrigger value="addresses">Addresses</TabsTrigger>
@@ -194,6 +196,10 @@ export default function ParticipantDetail() {
 
         <TabsContent value="funding" className="mt-4">
           {id && <ParticipantFundingPanel participantId={id} />}
+        </TabsContent>
+
+        <TabsContent value="goals" className="mt-4">
+          {id && <ParticipantGoalsPanel participantId={id} />}
         </TabsContent>
 
         {/* ── Budget ── */}
