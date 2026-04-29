@@ -83,6 +83,9 @@ export default function FundingAgreementDialog({ open, onOpenChange, participant
           id: c.id,
           support_category_code: c.support_category_code,
           total_amount: Number(c.total_amount),
+          goal_ids: existingLinks
+            .filter((l) => l.agreement_category_id === c.id)
+            .map((l) => l.goal_id),
         })),
       );
     } else {
@@ -92,13 +95,13 @@ export default function FundingAgreementDialog({ open, onOpenChange, participant
       setPeriodLength(orgSettings?.default_period_length_months ?? 3);
       setRolloverOverride("inherit");
       setStatus("active");
-      setRows([{ support_category_code: "", total_amount: 0 }]);
+      setRows([{ support_category_code: "", total_amount: 0, goal_ids: [] }]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, agreement?.id]);
+  }, [open, agreement?.id, existingLinks.length]);
 
   function addRow() {
-    setRows((r) => [...r, { support_category_code: "", total_amount: 0 }]);
+    setRows((r) => [...r, { support_category_code: "", total_amount: 0, goal_ids: [] }]);
   }
   function updateRow(i: number, patch: Partial<CategoryDraft>) {
     setRows((r) => r.map((row, idx) => (idx === i ? { ...row, ...patch } : row)));
