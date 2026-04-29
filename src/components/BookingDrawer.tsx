@@ -18,6 +18,9 @@ import { useOrgSettings } from "@/hooks/useOrgSettings";
 import { computeAvailable, findPeriodFor, hoursBetween } from "@/lib/fundingPeriods";
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import { DateTimePicker } from "@progress/kendo-react-dateinputs";
+import { useGoalsForCategory } from "@/hooks/useAgreementCategoryGoals";
+import { useReplaceBookingGoals } from "@/hooks/useBookingGoals";
+import { Target } from "lucide-react";
 
 interface Props {
   open: boolean;
@@ -38,6 +41,7 @@ export default function BookingDrawer({ open, onOpenChange, defaultDate }: Props
   const { data: staff = [] } = useStaff();
   const { data: categories = [] } = useNdisCategories();
   const create = useCreateBooking();
+  const replaceBookingGoals = useReplaceBookingGoals();
 
   const initialStart = snapToHalfHour(defaultDate ?? new Date());
   const initialEnd = new Date(initialStart.getTime() + 60 * 60 * 1000);
@@ -60,6 +64,7 @@ export default function BookingDrawer({ open, onOpenChange, defaultDate }: Props
     end_lng: null,
   });
   const [notes, setNotes] = useState("");
+  const [bookingGoalIds, setBookingGoalIds] = useState<string[]>([]);
 
   // Re-seed dates when drawer is reopened with a new default
   useEffect(() => {
@@ -69,6 +74,7 @@ export default function BookingDrawer({ open, onOpenChange, defaultDate }: Props
       setEndsAt(new Date(s.getTime() + 60 * 60 * 1000));
       setEndTouched(false);
       setStaffIds([]);
+      setBookingGoalIds([]);
       setLocation({
         location_kind: "participant_address",
         participant_address_id: null,
