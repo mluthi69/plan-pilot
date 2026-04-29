@@ -316,6 +316,49 @@ export default function BookingDrawer({ open, onOpenChange, defaultDate }: Props
 
           {/* Funding live check */}
           {participantId && supportCategory && (
+            <div className="space-y-1.5">
+              <Label className="flex items-center gap-1.5">
+                <Target className="h-3.5 w-3.5" /> Goals worked on this visit
+              </Label>
+              {!goalsForCategory || goalsForCategory.goals.length === 0 ? (
+                <p className="text-[11px] text-muted-foreground">
+                  No goals available. Add goals to the participant or link them on the agreement.
+                </p>
+              ) : (
+                <div className="space-y-1 rounded-md border border-border p-2">
+                  {!goalsForCategory.linked && (
+                    <p className="px-1 pb-1 text-[10px] text-muted-foreground">
+                      Tip: link goals to this category on the agreement to narrow this list.
+                    </p>
+                  )}
+                  {goalsForCategory.goals.map((g: any) => {
+                    const checked = bookingGoalIds.includes(g.id);
+                    return (
+                      <label key={g.id} className="flex cursor-pointer items-start gap-2 rounded p-1 hover:bg-muted/60">
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={(v) =>
+                            setBookingGoalIds((prev) =>
+                              v ? [...prev, g.id] : prev.filter((x) => x !== g.id),
+                            )
+                          }
+                        />
+                        <span className="text-xs">
+                          <span className="block font-medium leading-tight">{g.title}</span>
+                          {g.ndis_outcome_domain && (
+                            <span className="text-muted-foreground">{g.ndis_outcome_domain}</span>
+                          )}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Funding live check */}
+          {participantId && supportCategory && (
             <div className="rounded-md border border-border bg-muted/30 p-3 text-xs">
               {fundingCheck?.kind === "no-agreement" && (
                 <p className="flex items-center gap-1.5 text-warning">
