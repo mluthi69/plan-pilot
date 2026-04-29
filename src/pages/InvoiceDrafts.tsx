@@ -27,6 +27,11 @@ export default function InvoiceDrafts() {
   const orgId = useOrgId();
   const qc = useQueryClient();
   const [batchPending, setBatchPending] = useState(false);
+  const [report, setReport] = useState<{
+    created: { invoice_id: string; lines: number; total: number }[];
+    skipped: { visit_id: string; reasons: string[] }[];
+    considered: number;
+  } | null>(null);
 
   async function batchGenerate() {
     if (!orgId) return;
@@ -37,7 +42,13 @@ export default function InvoiceDrafts() {
       });
       if (error) throw error;
       const created = data?.created?.length ?? 0;
-      toast.success(`Generated ${created} draft invoice(s)`);
+      const skipped = data?.skipped?.length ?? 0;
+      setReport({
+        created: data?.created ?? [],
+        skipped: data?.skipped ?? [],
+        considered: data?.considered ?? 0,
+      });
+      toast.success(`Generated ${created} invoice(s) · skipped ${skipped} visit(s)`);
       qc.invalidateQueries({ queryKey: ["invoices"] });
       qc.invalidateQueries({ queryKey: ["draft-invoices"] });
     } catch (e: any) {
@@ -75,6 +86,64 @@ export default function InvoiceDrafts() {
         <Stat label="Ready" count={ready.length} tone="success" />
         <Stat label="Blocked" count={blocked.length} tone="warning" />
       </div>
+
+      {report && (
+        <section className="rounded-lg border border-border bg-card p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold">Last batch run</h2>
+            <button
+              onClick={() => setReport(null)}
+              className="text-xs text-muted-foreground hover:text-foreground"
+            >
+              Dismiss
+            </button>
+          </div>
+          <div className="grid grid-cols-3 gap-3 text-center text-xs">
+            <div className="rounded border border-border p-2">
+              <p className="text-lg font-semibold">{report.considered}</p>
+              <p className="text-muted-foreground">Considered</p>
+            </div>
+            <div className="rounded border border-border p-2">
+              <p className="text-lg font-semibold text-success">{report.created.length}</p>
+              <p className="text-muted-foreground">Invoices created</p>
+            </div>
+            <div className="rounded border border-border p-2">
+              <p className="text-lg font-semibold text-warning">{report.skipped.length}</p>
+              <p className="text-muted-foreground">Visits skipped</p>
+            </div>
+          </div>
+          {report.created.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground mb-1">Created</p>
+              <ul className="space-y-1 text-xs">
+                {report.created.map((c) => (
+                  <li key={c.invoice_id} className="flex items-center justify-between rounded border border-border px-2 py-1">
+                    <Link to={`/invoices/${c.invoice_id}`} className="font-mono hover:underline">
+                      {c.invoice_id.slice(0, 8)}…
+                    </Link>
+                    <span>{c.lines} line(s) · ${c.total.toFixed(2)}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {report.skipped.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground mb-1">Skipped</p>
+              <ul className="space-y-1 text-xs">
+                {report.skipped.map((s) => (
+                  <li key={s.visit_id} className="rounded border border-border px-2 py-1">
+                    <Link to={`/visits/${s.visit_id}`} className="font-mono hover:underline">
+                      visit {s.visit_id.slice(0, 8)}…
+                    </Link>
+                    <span className="ml-2 text-warning">{s.reasons.join(" · ")}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </section>
+      )}
 
       {isLoading ? (
         <div className="rounded-lg border border-border bg-card py-10 text-center text-sm text-muted-foreground">
