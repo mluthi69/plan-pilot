@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,24 +6,33 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2 } from "lucide-react";
 import { useNdisCategories } from "@/hooks/useNdisCategories";
-import { useCreateFundingAgreement } from "@/hooks/useFundingAgreements";
+import {
+  useCreateFundingAgreement,
+  useUpdateFundingAgreement,
+  type FundingAgreement,
+} from "@/hooks/useFundingAgreements";
 import { useOrgSettings } from "@/hooks/useOrgSettings";
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   participantId: string;
+  /** When provided, the dialog enters edit mode. */
+  agreement?: FundingAgreement | null;
 }
 
 interface CategoryDraft {
+  id?: string;
   support_category_code: string;
   total_amount: number;
 }
 
-export default function FundingAgreementDialog({ open, onOpenChange, participantId }: Props) {
+export default function FundingAgreementDialog({ open, onOpenChange, participantId, agreement }: Props) {
   const { data: categories = [] } = useNdisCategories();
   const { data: orgSettings } = useOrgSettings();
   const create = useCreateFundingAgreement();
+  const update = useUpdateFundingAgreement();
+  const isEdit = !!agreement;
 
   const today = new Date().toISOString().slice(0, 10);
   const oneYear = new Date();
@@ -34,7 +43,42 @@ export default function FundingAgreementDialog({ open, onOpenChange, participant
   const [end, setEnd] = useState(oneYear.toISOString().slice(0, 10));
   const [periodLength, setPeriodLength] = useState<number>(orgSettings?.default_period_length_months ?? 3);
   const [rolloverOverride, setRolloverOverride] = useState<"inherit" | "yes" | "no">("inherit");
+  const [status, setStatus] = useState<FundingAgreement["status"]>("active");
   const [rows, setRows] = useState<CategoryDraft[]>([{ support_category_code: "", total_amount: 0 }]);
+
+  useEffect(() => {
+    if (!open) return;
+    if (agreement) {
+      setTitle(agreement.title);
+      setStart(agreement.start_date);
+      setEnd(agreement.end_date);
+      setPeriodLength(agreement.period_length_months);
+      setStatus(agreement.status);
+      setRolloverOverride(
+        agreement.allow_unspent_rollover === null
+          ? "inherit"
+          : agreement.allow_unspent_rollover
+            ? "yes"
+            : "no",
+      );
+      setRows(
+        (agreement.categories ?? []).map((c) => ({
+          id: c.id,
+          support_category_code: c.support_category_code,
+          total_amount: Number(c.total_amount),
+        })),
+      );
+    } else {
+      setTitle("Annual NDIS Plan");
+      setStart(today);
+      setEnd(oneYear.toISOString().slice(0, 10));
+      setPeriodLength(orgSettings?.default_period_length_months ?? 3);
+      setRolloverOverride("inherit");
+      setStatus("active");
+      setRows([{ support_category_code: "", total_amount: 0 }]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, agreement?.id]);
 
   function addRow() {
     setRows((r) => [...r, { support_category_code: "", total_amount: 0 }]);
@@ -52,17 +96,31 @@ export default function FundingAgreementDialog({ open, onOpenChange, participant
     e.preventDefault();
     const valid = rows.filter((r) => r.support_category_code && Number(r.total_amount) > 0);
     if (valid.length === 0) return;
-    await create.mutateAsync({
-      participant_id: participantId,
-      title,
-      start_date: start,
-      end_date: end,
-      period_length_months: periodLength,
-      allow_unspent_rollover:
-        rolloverOverride === "inherit" ? null : rolloverOverride === "yes",
-      status: "active",
-      categories: valid,
-    });
+    const allowRollover =
+      rolloverOverride === "inherit" ? null : rolloverOverride === "yes";
+    if (isEdit && agreement) {
+      await update.mutateAsync({
+        id: agreement.id,
+        title,
+        start_date: start,
+        end_date: end,
+        period_length_months: periodLength,
+        allow_unspent_rollover: allowRollover,
+        status,
+        categories: valid,
+      });
+    } else {
+      await create.mutateAsync({
+        participant_id: participantId,
+        title,
+        start_date: start,
+        end_date: end,
+        period_length_months: periodLength,
+        allow_unspent_rollover: allowRollover,
+        status: "active",
+        categories: valid,
+      });
+    }
     onOpenChange(false);
   }
 
@@ -70,7 +128,7 @@ export default function FundingAgreementDialog({ open, onOpenChange, participant
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>New funding agreement</DialogTitle>
+          <DialogTitle>{isEdit ? "Edit funding agreement" : "New funding agreement"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
@@ -107,6 +165,20 @@ export default function FundingAgreementDialog({ open, onOpenChange, participant
                 </SelectContent>
               </Select>
             </div>
+            {isEdit && (
+              <div className="space-y-1.5">
+                <Label>Status</Label>
+                <Select value={status} onValueChange={(v: any) => setStatus(v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="draft">Draft</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="expired">Expired</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -177,8 +249,12 @@ export default function FundingAgreementDialog({ open, onOpenChange, participant
 
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button type="submit" disabled={create.isPending}>
-              {create.isPending ? "Saving…" : "Create agreement"}
+            <Button type="submit" disabled={create.isPending || update.isPending}>
+              {create.isPending || update.isPending
+                ? "Saving…"
+                : isEdit
+                  ? "Save changes"
+                  : "Create agreement"}
             </Button>
           </DialogFooter>
         </form>
