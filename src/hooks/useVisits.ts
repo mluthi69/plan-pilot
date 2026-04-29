@@ -129,6 +129,58 @@ export function useEndVisit() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
+      // Enforce completion gates derived from org_settings.
+      const [{ data: visit }, { data: settingsRow }] = await Promise.all([
+        (supabase as any)
+          .from("visits")
+          .select("id, org_id, participant_signed, notes_submitted")
+          .eq("id", id)
+          .maybeSingle(),
+        (supabase as any)
+          .from("visits")
+          .select("org_id")
+          .eq("id", id)
+          .maybeSingle(),
+      ]);
+      if (!visit) throw new Error("Visit not found");
+
+      const { data: settings } = await (supabase as any)
+        .from("org_settings")
+        .select("require_geo_checkin, require_goal_contribution")
+        .eq("org_id", visit.org_id)
+        .maybeSingle();
+
+      const requireGeo = !!settings?.require_geo_checkin;
+      const requireGoal = !!settings?.require_goal_contribution;
+
+      if (requireGeo) {
+        const { data: fixes } = await (supabase as any)
+          .from("visit_geo_fixes")
+          .select("kind")
+          .eq("visit_id", id);
+        const hasIn = (fixes ?? []).some((f: any) => f.kind === "check_in");
+        const hasOut = (fixes ?? []).some((f: any) => f.kind === "check_out");
+        if (!hasIn || !hasOut) {
+          throw new Error(
+            "Geo check-in and check-out are required before completing this visit.",
+          );
+        }
+      }
+      if (requireGoal) {
+        const { data: contribs } = await (supabase as any)
+          .from("visit_goal_contributions")
+          .select("id, progress_rating")
+          .eq("visit_id", id);
+        const rated = (contribs ?? []).some(
+          (c: any) => c.progress_rating != null && c.progress_rating > 0,
+        );
+        if (!rated) {
+          throw new Error(
+            "At least one goal contribution with a rating is required before completing this visit.",
+          );
+        }
+      }
+
       const { error } = await (supabase as any)
         .from("visits")
         .update({
