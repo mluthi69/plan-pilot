@@ -90,12 +90,14 @@ export function useCreateFundingAgreement() {
           support_category_code: c.support_category_code,
           total_amount: c.total_amount,
         }));
-        const { error: catErr } = await (supabase as any)
+        const { data: insertedCats, error: catErr } = await (supabase as any)
           .from("funding_agreement_categories")
-          .insert(rows);
+          .insert(rows)
+          .select("id, support_category_code");
         if (catErr) throw catErr;
+        return { ...agr, inserted_categories: insertedCats ?? [] };
       }
-      return agr;
+      return { ...agr, inserted_categories: [] as Array<{ id: string; support_category_code: string }> };
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["funding_agreements"] });
