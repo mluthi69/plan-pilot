@@ -17,6 +17,7 @@ export default function EvidencePack() {
   const { token } = useParams<{ token: string }>();
   const [data, setData] = useState<Pack | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [mapsKey, setMapsKey] = useState<string | null>(null);
 
   useEffect(() => {
     if (!token) return;
@@ -29,6 +30,30 @@ export default function EvidencePack() {
       .then(setData)
       .catch((e) => setError(e.message));
   }, [token]);
+
+  // Fetch the Maps browser key (same one used elsewhere) so we can render
+  // small static map images for each geo fix.
+  useEffect(() => {
+    const url = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/maps-config`;
+    fetch(url, { headers: { apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "" } })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => j?.key && setMapsKey(j.key))
+      .catch(() => {});
+  }, []);
+
+  function staticMapUrl(lat: number, lng: number) {
+    if (!mapsKey) return null;
+    const params = new URLSearchParams({
+      center: `${lat},${lng}`,
+      zoom: "16",
+      size: "560x180",
+      scale: "2",
+      maptype: "roadmap",
+      markers: `color:red|${lat},${lng}`,
+      key: mapsKey,
+    });
+    return `https://maps.googleapis.com/maps/api/staticmap?${params.toString()}`;
+  }
 
   if (error) return <div className="mx-auto max-w-2xl p-8 text-sm text-destructive">{error}</div>;
   if (!data) return <div className="mx-auto max-w-2xl p-8 text-sm text-muted-foreground">Loading evidence pack…</div>;
@@ -78,22 +103,46 @@ export default function EvidencePack() {
       {data.geo_fixes.length > 0 && (
         <section>
           <h2 className="mb-2 text-sm font-semibold">Location proof</h2>
-          <ul className="space-y-1 text-sm">
-            {data.geo_fixes.map((f, i) => (
-              <li key={i} className="flex items-center gap-2 rounded border border-border bg-card p-2">
-                <MapPin className="h-4 w-4 text-muted-foreground" />
-                <span className="capitalize">{f.kind.replace("_", " ")}</span>
-                <span className="text-muted-foreground">· {fmt(f.captured_at)}</span>
-                <a
-                  className="ml-auto text-xs text-primary underline"
-                  href={`https://maps.google.com/?q=${f.lat},${f.lng}`}
-                  target="_blank" rel="noreferrer"
-                >
-                  View on map
-                </a>
-              </li>
-            ))}
-          </ul>
+          <div className="space-y-3">
+            {data.geo_fixes.map((f, i) => {
+              const url = staticMapUrl(Number(f.lat), Number(f.lng));
+              return (
+                <Card key={i}>
+                  <CardContent className="space-y-2 py-3">
+                    <div className="flex items-center gap-2 text-sm">
+                      <MapPin className="h-4 w-4 text-muted-foreground" />
+                      <span className="capitalize font-medium">{f.kind.replace("_", " ")}</span>
+                      <span className="text-xs text-muted-foreground">· {fmt(f.captured_at)}</span>
+                      {f.accuracy_m && (
+                        <span className="text-xs text-muted-foreground">· ±{Math.round(Number(f.accuracy_m))}m</span>
+                      )}
+                      <a
+                        className="ml-auto text-xs text-primary underline"
+                        href={`https://maps.google.com/?q=${f.lat},${f.lng}`}
+                        target="_blank" rel="noreferrer"
+                      >
+                        Open in Google Maps
+                      </a>
+                    </div>
+                    {url ? (
+                      <a href={`https://maps.google.com/?q=${f.lat},${f.lng}`} target="_blank" rel="noreferrer" className="block overflow-hidden rounded border border-border">
+                        <img
+                          src={url}
+                          alt={`Map of ${f.kind} location`}
+                          className="w-full object-cover"
+                          loading="lazy"
+                        />
+                      </a>
+                    ) : (
+                      <p className="text-[11px] text-muted-foreground">
+                        Coordinates: {Number(f.lat).toFixed(5)}, {Number(f.lng).toFixed(5)}
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
         </section>
       )}
 
