@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
     let q = sb
       .from("visits")
       .select(
-        "id, participant_id, booking_id, scheduled_start, bookings!inner(id, support_category, support_item_code, quantity, unit, unit_price, service_type)",
+        "id, participant_id, booking_id, scheduled_start, participant_signed, notes_submitted, bookings!inner(id, support_category, support_item_code, quantity, unit, unit_price, service_type)",
       )
       .eq("org_id", org_id)
       .eq("status", "completed");
@@ -42,6 +42,15 @@ Deno.serve(async (req) => {
 
     const { data: visits, error: vErr } = await q;
     if (vErr) throw vErr;
+
+    // Org settings for completion gates (used to flag risky lines, NOT to block).
+    const { data: settings } = await sb
+      .from("org_settings")
+      .select("require_geo_checkin, require_goal_contribution")
+      .eq("org_id", org_id)
+      .maybeSingle();
+    const requireGeo = !!settings?.require_geo_checkin;
+    const requireGoal = !!settings?.require_goal_contribution;
 
     // Skip visits already linked to an invoice line
     const visitIds = (visits ?? []).map((v: any) => v.id);
@@ -53,15 +62,44 @@ Deno.serve(async (req) => {
         .in("visit_id", visitIds);
       alreadyLinked = new Set((lines ?? []).map((l: any) => l.visit_id).filter(Boolean));
     }
-    const eligible = (visits ?? []).filter((v: any) => !alreadyLinked.has(v.id));
+
+    // Pre-fetch geo + contributions in bulk for validation
+    let geoByVisit: Record<string, any[]> = {};
+    let contribByVisit: Record<string, any[]> = {};
+    if (visitIds.length) {
+      const [{ data: gf }, { data: gc }] = await Promise.all([
+        sb.from("visit_geo_fixes").select("visit_id, kind").in("visit_id", visitIds),
+        sb.from("visit_goal_contributions").select("visit_id, progress_rating").in("visit_id", visitIds),
+      ]);
+      for (const r of gf ?? []) (geoByVisit[r.visit_id] ??= []).push(r);
+      for (const r of gc ?? []) (contribByVisit[r.visit_id] ??= []).push(r);
+    }
+
+    const skippedReport: Array<{ visit_id: string; reasons: string[] }> = [];
+    const eligible: any[] = [];
+    for (const v of visits ?? []) {
+      const reasons: string[] = [];
+      if (alreadyLinked.has(v.id)) reasons.push("Already invoiced");
+      const b = v.bookings;
+      if (!b?.quantity) reasons.push("Missing quantity on booking");
+      if (!b?.unit_price) reasons.push("Missing unit price on booking");
+      if (requireGeo) {
+        const fixes = geoByVisit[v.id] ?? [];
+        if (!fixes.some((f) => f.kind === "check_in")) reasons.push("Missing geo check-in");
+        if (!fixes.some((f) => f.kind === "check_out")) reasons.push("Missing geo check-out");
+      }
+      if (requireGoal) {
+        const c = contribByVisit[v.id] ?? [];
+        if (!c.some((x) => x.progress_rating != null && x.progress_rating > 0))
+          reasons.push("Missing goal contribution rating");
+      }
+      if (reasons.length === 0) eligible.push(v);
+      else skippedReport.push({ visit_id: v.id, reasons });
+    }
 
     // Group by participant
     const byParticipant: Record<string, any[]> = {};
-    for (const v of eligible) {
-      const b = v.bookings;
-      if (!b?.quantity || !b?.unit_price) continue;
-      (byParticipant[v.participant_id] ??= []).push(v);
-    }
+    for (const v of eligible) (byParticipant[v.participant_id] ??= []).push(v);
 
     const created: any[] = [];
     for (const [pid, vs] of Object.entries(byParticipant)) {
@@ -108,7 +146,12 @@ Deno.serve(async (req) => {
       created.push({ invoice_id: inv.id, lines: lineRows.length, total });
     }
 
-    return new Response(JSON.stringify({ created, skipped: (visits ?? []).length - eligible.length }), {
+    return new Response(JSON.stringify({
+      created,
+      skipped_count: skippedReport.length,
+      skipped: skippedReport,
+      considered: (visits ?? []).length,
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
