@@ -114,8 +114,9 @@ export default function FundingAgreementDialog({ open, onOpenChange, participant
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    const valid = rows.filter((r) => r.support_category_code && Number(r.total_amount) > 0);
-    if (valid.length === 0) return;
+    const validRows = rows.filter((r) => r.support_category_code && Number(r.total_amount) > 0);
+    if (validRows.length === 0) return;
+    const valid = validRows.map(({ goal_ids: _gi, ...rest }) => rest);
     const allowRollover =
       rolloverOverride === "inherit" ? null : rolloverOverride === "yes";
     if (isEdit && agreement) {
@@ -129,8 +130,24 @@ export default function FundingAgreementDialog({ open, onOpenChange, participant
         status,
         categories: valid,
       });
+      // Refetch fresh category ids (some may be brand new) to map by code, then save links.
+      const { data: freshCats } = await (supabase as any)
+        .from("funding_agreement_categories")
+        .select("id, support_category_code")
+        .eq("agreement_id", agreement.id);
+      const codeToId = new Map<string, string>(
+        (freshCats ?? []).map((c: any) => [c.support_category_code, c.id]),
+      );
+      for (const r of validRows) {
+        const catId = r.id ?? codeToId.get(r.support_category_code);
+        if (!catId) continue;
+        await replaceLinks.mutateAsync({
+          agreement_category_id: catId,
+          goal_ids: r.goal_ids,
+        });
+      }
     } else {
-      await create.mutateAsync({
+      const result = await create.mutateAsync({
         participant_id: participantId,
         title,
         start_date: start,
@@ -140,6 +157,18 @@ export default function FundingAgreementDialog({ open, onOpenChange, participant
         status: "active",
         categories: valid,
       });
+      const codeToId = new Map<string, string>(
+        ((result as any)?.inserted_categories ?? []).map((c: any) => [c.support_category_code, c.id]),
+      );
+      for (const r of validRows) {
+        if (!r.goal_ids.length) continue;
+        const catId = codeToId.get(r.support_category_code);
+        if (!catId) continue;
+        await replaceLinks.mutateAsync({
+          agreement_category_id: catId,
+          goal_ids: r.goal_ids,
+        });
+      }
     }
     onOpenChange(false);
   }
