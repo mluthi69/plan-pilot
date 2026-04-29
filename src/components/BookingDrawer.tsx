@@ -157,6 +157,17 @@ export default function BookingDrawer({ open, onOpenChange, defaultDate }: Props
     return staff.filter((s) => s.bookable && s.status === "active");
   }, [staff]);
 
+  // Goals available for the chosen participant + category.
+  const { data: goalsForCategory } = useGoalsForCategory(
+    participantId || undefined,
+    supportCategory || undefined,
+  );
+
+  // Reset goal selections when participant or category changes.
+  useEffect(() => {
+    setBookingGoalIds([]);
+  }, [participantId, supportCategory]);
+
   function toggleStaff(id: string) {
     setStaffIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   }
