@@ -39,6 +39,7 @@ import AdminTenants from "./pages/admin/AdminTenants";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminPlatformSettings from "./pages/admin/AdminPlatformSettings";
 import EvidencePack from "./pages/EvidencePack";
+import CoordinatorReport from "./pages/CoordinatorReport";
 
 const queryClient = new QueryClient();
 
@@ -56,6 +57,9 @@ const App = () => (
 
             {/* Public evidence-pack magic link */}
             <Route path="/evidence/:token" element={<EvidencePack />} />
+
+            {/* Public Support Coordinator report magic link */}
+            <Route path="/coord-report/:token" element={<CoordinatorReport />} />
 
             {/* Super Admin routes */}
             <Route

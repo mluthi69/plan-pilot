@@ -2,8 +2,9 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { useMemo } from "react";
 import {
   ArrowLeft, Phone, Mail, MapPin, Calendar, User, ClipboardList,
-  MoreHorizontal, ExternalLink, Shield,
+  MoreHorizontal, ExternalLink, Shield, Share2,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -187,7 +188,26 @@ export default function ParticipantDetail() {
             </div>
           </div>
         </div>
-        <Button variant="outline" size="sm"><MoreHorizontal className="h-3.5 w-3.5" /></Button>
+        <div className="flex items-center gap-2">
+          {(participant as any).coord_report_token && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => {
+                const link = `${window.location.origin}/coord-report/${(participant as any).coord_report_token}`;
+                navigator.clipboard.writeText(link).then(
+                  () => toast.success("Coordinator report link copied"),
+                  () => toast.error("Could not copy link"),
+                );
+                window.open(link, "_blank");
+              }}
+            >
+              <Share2 className="h-3.5 w-3.5" /> Share coordinator report
+            </Button>
+          )}
+          <Button variant="outline" size="sm"><MoreHorizontal className="h-3.5 w-3.5" /></Button>
+        </div>
       </div>
 
       {/* Plan summary strip */}

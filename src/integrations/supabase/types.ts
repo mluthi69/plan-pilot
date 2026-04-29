@@ -1043,6 +1043,7 @@ export type Database = {
       participants: {
         Row: {
           address: string | null
+          coord_report_token: string
           created_at: string
           date_of_birth: string | null
           email: string | null
@@ -1059,6 +1060,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          coord_report_token?: string
           created_at?: string
           date_of_birth?: string | null
           email?: string | null
@@ -1075,6 +1077,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          coord_report_token?: string
           created_at?: string
           date_of_birth?: string | null
           email?: string | null
