@@ -104,7 +104,7 @@ export default function BookingDrawer({ open, onOpenChange, defaultDate }: Props
   );
 
   const hours = useMemo(() => {
-    try { return hoursBetween(new Date(startsAt), new Date(endsAt)); } catch { return 0; }
+    try { return hoursBetween(startsAt, endsAt); } catch { return 0; }
   }, [startsAt, endsAt]);
 
   const lineAmount = useMemo(
@@ -125,7 +125,7 @@ export default function BookingDrawer({ open, onOpenChange, defaultDate }: Props
       }
     }
     if (periods.length === 0) return { kind: "no-agreement" as const };
-    const period = findPeriodFor(new Date(startsAt), periods);
+    const period = findPeriodFor(startsAt, periods);
     if (!period) return { kind: "out-of-range" as const };
     const rolloverEnabled =
       agreements.find((a) => a.categories.some((c) => c.id === period.agreement_category_id))
@@ -159,8 +159,8 @@ export default function BookingDrawer({ open, onOpenChange, defaultDate }: Props
     e.preventDefault();
     if (!participantId) return;
 
-    const startD = new Date(startsAt);
-    const endD = new Date(endsAt);
+    const startD = startsAt;
+    const endD = endsAt;
     if (!isHalfHourSlot(startD) || !isHalfHourSlot(endD)) {
       toast.error("Bookings must start and end on a half-hour boundary.");
       return;
@@ -251,11 +251,35 @@ export default function BookingDrawer({ open, onOpenChange, defaultDate }: Props
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Starts</Label>
-              <Input type="datetime-local" step={1800} value={startsAt} onChange={(e) => setStartsAt(e.target.value)} required />
+              <DateTimePicker
+                value={startsAt}
+                steps={{ minute: 30 }}
+                format="dd MMM yyyy, HH:mm"
+                onChange={(e) => {
+                  const v = e.value;
+                  if (!v) return;
+                  const snapped = snapToHalfHour(v);
+                  setStartsAt(snapped);
+                  if (!endTouched) {
+                    setEndsAt(new Date(snapped.getTime() + 60 * 60 * 1000));
+                  }
+                }}
+              />
             </div>
             <div className="space-y-1.5">
               <Label>Ends</Label>
-              <Input type="datetime-local" step={1800} value={endsAt} onChange={(e) => setEndsAt(e.target.value)} required />
+              <DateTimePicker
+                value={endsAt}
+                steps={{ minute: 30 }}
+                format="dd MMM yyyy, HH:mm"
+                min={startsAt}
+                onChange={(e) => {
+                  const v = e.value;
+                  if (!v) return;
+                  setEndsAt(snapToHalfHour(v));
+                  setEndTouched(true);
+                }}
+              />
             </div>
           </div>
 
