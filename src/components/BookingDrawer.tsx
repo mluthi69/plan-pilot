@@ -180,7 +180,7 @@ export default function BookingDrawer({ open, onOpenChange, defaultDate }: Props
       return;
     }
 
-    await create.mutateAsync({
+    const booking = await create.mutateAsync({
       participant_id: participantId,
       staff_ids: staffIds,
       support_category: supportCategory || null,
@@ -201,6 +201,12 @@ export default function BookingDrawer({ open, onOpenChange, defaultDate }: Props
       end_lng: location.end_lng,
       notes: notes || null,
     } as any);
+    if ((booking as any)?.id && bookingGoalIds.length) {
+      await replaceBookingGoals.mutateAsync({
+        booking_id: (booking as any).id,
+        goal_ids: bookingGoalIds,
+      });
+    }
     onOpenChange(false);
   }
 
