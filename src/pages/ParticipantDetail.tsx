@@ -1,4 +1,4 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useMemo } from "react";
 import {
   ArrowLeft, Phone, Mail, MapPin, Calendar, User, ClipboardList,
@@ -70,6 +70,7 @@ function money(n: number) {
 
 export default function ParticipantDetail() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { data: participant, isLoading } = useParticipant(id);
   const { data: categories = [] } = useBudgetCategories(id);
   const { data: agreements = [] } = useAgreements(id);
