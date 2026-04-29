@@ -243,6 +243,7 @@ export default function FundingAgreementDialog({ open, onOpenChange, participant
                   <tr className="border-b text-xs text-muted-foreground">
                     <th className="px-3 py-2 text-left font-medium">NDIS support category</th>
                     <th className="px-3 py-2 text-right font-medium">Total amount</th>
+                    <th className="px-3 py-2 text-left font-medium">Linked goals</th>
                     <th className="w-10"></th>
                   </tr>
                 </thead>
@@ -274,6 +275,63 @@ export default function FundingAgreementDialog({ open, onOpenChange, participant
                           onChange={(e) => updateRow(i, { total_amount: Number(e.target.value) || 0 })}
                         />
                       </td>
+                      <td className="px-3 py-2">
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="h-8 w-full justify-between font-normal"
+                            >
+                              <span className="flex items-center gap-1.5 truncate">
+                                <Target className="h-3 w-3" />
+                                {r.goal_ids.length === 0
+                                  ? "Optional"
+                                  : `${r.goal_ids.length} goal${r.goal_ids.length === 1 ? "" : "s"}`}
+                              </span>
+                              <ChevronDown className="h-3 w-3 opacity-60" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-72 p-0" align="end">
+                            {goals.length === 0 ? (
+                              <p className="p-3 text-xs text-muted-foreground">
+                                No goals on this participant yet. Add some on the Goals tab.
+                              </p>
+                            ) : (
+                              <div className="max-h-64 overflow-auto p-2">
+                                {goals.map((g) => {
+                                  const checked = r.goal_ids.includes(g.id);
+                                  return (
+                                    <label
+                                      key={g.id}
+                                      className="flex cursor-pointer items-start gap-2 rounded p-1.5 hover:bg-muted/60"
+                                    >
+                                      <Checkbox
+                                        checked={checked}
+                                        onCheckedChange={(v) => {
+                                          const next = v
+                                            ? [...r.goal_ids, g.id]
+                                            : r.goal_ids.filter((x) => x !== g.id);
+                                          updateRow(i, { goal_ids: next });
+                                        }}
+                                      />
+                                      <span className="space-y-0.5 text-xs">
+                                        <span className="block font-medium leading-tight">{g.title}</span>
+                                        {g.ndis_outcome_domain && (
+                                          <Badge variant="outline" className="text-[10px]">
+                                            {g.ndis_outcome_domain}
+                                          </Badge>
+                                        )}
+                                      </span>
+                                    </label>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </PopoverContent>
+                        </Popover>
+                      </td>
                       <td className="px-2 py-2 text-right">
                         <button type="button" onClick={() => removeRow(i)} className="text-muted-foreground hover:text-destructive">
                           <Trash2 className="h-3.5 w-3.5" />
@@ -286,6 +344,7 @@ export default function FundingAgreementDialog({ open, onOpenChange, participant
                   <tr className="bg-muted/30 text-xs">
                     <td className="px-3 py-2 text-right font-medium">Total</td>
                     <td className="px-3 py-2 text-right font-semibold">${total.toLocaleString("en-AU", { minimumFractionDigits: 2 })}</td>
+                    <td></td>
                     <td></td>
                   </tr>
                 </tfoot>
