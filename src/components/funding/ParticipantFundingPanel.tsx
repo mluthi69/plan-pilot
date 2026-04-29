@@ -1,10 +1,15 @@
 import { useState } from "react";
-import { Plus, Wallet } from "lucide-react";
+import { Plus, Wallet, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { useFundingAgreements, useFundingSpend } from "@/hooks/useFundingAgreements";
+import {
+  useFundingAgreements,
+  useFundingSpend,
+  useDeleteFundingAgreement,
+  type FundingAgreement,
+} from "@/hooks/useFundingAgreements";
 import { useNdisCategories } from "@/hooks/useNdisCategories";
 import { useOrgSettings } from "@/hooks/useOrgSettings";
 import FundingAgreementDialog from "./FundingAgreementDialog";
@@ -28,6 +33,8 @@ export default function ParticipantFundingPanel({ participantId }: Props) {
   const { data: categories = [] } = useNdisCategories();
   const { data: orgSettings } = useOrgSettings();
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<FundingAgreement | null>(null);
+  const del = useDeleteFundingAgreement();
 
   const catName = (code: string) => categories.find((c) => c.code === code)?.name ?? code;
 
@@ -38,7 +45,7 @@ export default function ParticipantFundingPanel({ participantId }: Props) {
           <h2 className="text-sm font-semibold">Funding agreements</h2>
           <p className="text-xs text-muted-foreground">Category-level budgets split into funding periods.</p>
         </div>
-        <Button size="sm" onClick={() => setOpen(true)}>
+        <Button size="sm" onClick={() => { setEditing(null); setOpen(true); }}>
           <Plus className="mr-1.5 h-3.5 w-3.5" /> New agreement
         </Button>
       </div>
@@ -53,7 +60,7 @@ export default function ParticipantFundingPanel({ participantId }: Props) {
             <p className="text-xs text-muted-foreground max-w-sm">
               Bookings can't be funding-checked without an agreement covering the relevant category.
             </p>
-            <Button size="sm" variant="outline" className="mt-2" onClick={() => setOpen(true)}>
+            <Button size="sm" variant="outline" className="mt-2" onClick={() => { setEditing(null); setOpen(true); }}>
               Create first agreement
             </Button>
           </CardContent>
@@ -79,6 +86,20 @@ export default function ParticipantFundingPanel({ participantId }: Props) {
                     <Badge variant="outline" className="text-[10px]">
                       {rolloverEnabled ? "Rollover on" : "No rollover"}
                     </Badge>
+                    <Button size="sm" variant="ghost" onClick={() => { setEditing(a); setOpen(true); }}>
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        if (confirm(`Delete agreement "${a.title}"? This will remove all category budgets and periods.`)) {
+                          del.mutate(a.id);
+                        }
+                      }}
+                    >
+                      <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                    </Button>
                   </div>
                 </div>
               </CardHeader>
@@ -140,8 +161,9 @@ export default function ParticipantFundingPanel({ participantId }: Props) {
 
       <FundingAgreementDialog
         open={open}
-        onOpenChange={setOpen}
+        onOpenChange={(v) => { setOpen(v); if (!v) setEditing(null); }}
         participantId={participantId}
+        agreement={editing}
       />
     </div>
   );

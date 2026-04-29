@@ -62,3 +62,18 @@
 .k-event.evt-completed { background: hsl(var(--success, 142 71% 45%)); color: hsl(var(--background)); }
 .k-event.evt-cancelled { background: hsl(var(--muted)); color: hsl(var(--muted-foreground)); text-decoration: line-through; }
 .k-event.evt-no_show { background: hsl(var(--destructive)); color: hsl(var(--destructive-foreground)); }
+
+/* Kendo popups (DateTimePicker, DropDown, etc.) are rendered into a portal
+   on document.body. When opened from inside a Radix Sheet/Dialog, Radix sets
+   pointer-events:none on body which can swallow clicks inside the popup.
+   Force pointer-events to be active on Kendo animation containers and popups
+   so the time list / calendar are clickable. Also raise z-index above
+   Radix overlays. */
+.k-animation-container,
+.k-popup,
+.k-list-container,
+.k-calendar-container,
+.k-datetime-container {
+  pointer-events: auto !important;
+  z-index: 100 !important;
+}

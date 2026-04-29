@@ -123,6 +123,111 @@ export function useUpdateFundingAgreementStatus() {
   });
 }
 
+export interface FundingAgreementUpdate {
+  id: string;
+  title: string;
+  start_date: string;
+  end_date: string;
+  period_length_months: number;
+  allow_unspent_rollover: boolean | null;
+  status: FundingAgreementStatus;
+  notes?: string | null;
+  categories: { id?: string; support_category_code: string; total_amount: number }[];
+}
+
+/**
+ * Full update of a funding agreement plus its categories.
+ * Strategy: update the agreement, upsert provided categories, delete categories
+ * that were removed. The DB triggers will regenerate funding_periods.
+ */
+export function useUpdateFundingAgreement() {
+  const qc = useQueryClient();
+  const orgId = useOrgId();
+  return useMutation({
+    mutationFn: async (input: FundingAgreementUpdate) => {
+      if (!orgId) throw new Error("No organization");
+      const { id, categories, ...fields } = input;
+
+      const { error: agrErr } = await (supabase as any)
+        .from("funding_agreements")
+        .update(fields)
+        .eq("id", id);
+      if (agrErr) throw agrErr;
+
+      // Load existing category ids to know what to delete.
+      const { data: existing, error: exErr } = await (supabase as any)
+        .from("funding_agreement_categories")
+        .select("id")
+        .eq("agreement_id", id);
+      if (exErr) throw exErr;
+      const existingIds = new Set((existing ?? []).map((r: any) => r.id));
+      const keptIds = new Set(categories.filter((c) => c.id).map((c) => c.id!));
+      const toDelete = [...existingIds].filter((x) => !keptIds.has(x as string));
+
+      if (toDelete.length) {
+        const { error: delErr } = await (supabase as any)
+          .from("funding_agreement_categories")
+          .delete()
+          .in("id", toDelete);
+        if (delErr) throw delErr;
+      }
+
+      // Update existing rows.
+      for (const c of categories) {
+        if (c.id) {
+          const { error } = await (supabase as any)
+            .from("funding_agreement_categories")
+            .update({
+              support_category_code: c.support_category_code,
+              total_amount: c.total_amount,
+            })
+            .eq("id", c.id);
+          if (error) throw error;
+        }
+      }
+      // Insert new rows.
+      const newRows = categories
+        .filter((c) => !c.id)
+        .map((c) => ({
+          org_id: orgId,
+          agreement_id: id,
+          support_category_code: c.support_category_code,
+          total_amount: c.total_amount,
+        }));
+      if (newRows.length) {
+        const { error } = await (supabase as any)
+          .from("funding_agreement_categories")
+          .insert(newRows);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["funding_agreements"] });
+      qc.invalidateQueries({ queryKey: ["funding_spend"] });
+      toast.success("Agreement updated");
+    },
+    onError: (e: any) => toast.error(e.message ?? "Failed to update agreement"),
+  });
+}
+
+export function useDeleteFundingAgreement() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await (supabase as any)
+        .from("funding_agreements")
+        .delete()
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["funding_agreements"] });
+      toast.success("Agreement deleted");
+    },
+    onError: (e: any) => toast.error(e.message ?? "Failed to delete agreement"),
+  });
+}
+
 /**
  * Returns spend per funding_period_id derived from existing bookings
  * (quantity × unit_price) within each period for the given participant.
