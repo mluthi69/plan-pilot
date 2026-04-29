@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useOrganization } from "@clerk/clerk-react";
-import { Building2, Palette, Users, Shield, Link2, CreditCard, FileText, Save, Loader2, MapPin } from "lucide-react";
+import { Building2, Palette, Users, Shield, Link2, CreditCard, FileText, Save, Loader2, MapPin, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import LocationsManager from "@/components/locations/LocationsManager";
+import { useOrgSettings, useUpdateOrgSettings } from "@/hooks/useOrgSettings";
 
 const roles = [
   { name: "Tenant Admin", users: 2, permissions: "Full access", builtin: true },
@@ -42,6 +43,12 @@ export default function Settings() {
   const { memberships, isLoaded: orgLoaded } = useOrganization({
     memberships: { infinite: true },
   });
+  const { data: orgSettings } = useOrgSettings();
+  const updateSettings = useUpdateOrgSettings();
+  const [periodMonths, setPeriodMonths] = useState<number>(3);
+  useEffect(() => {
+    if (orgSettings) setPeriodMonths(orgSettings.default_period_length_months ?? 3);
+  }, [orgSettings]);
   return (
     <div className="space-y-6">
       <div>
@@ -55,6 +62,7 @@ export default function Settings() {
           <TabsTrigger value="branding"><Palette className="mr-1.5 h-3.5 w-3.5" />Branding</TabsTrigger>
           <TabsTrigger value="roles"><Shield className="mr-1.5 h-3.5 w-3.5" />Roles & Permissions</TabsTrigger>
           <TabsTrigger value="workflows"><FileText className="mr-1.5 h-3.5 w-3.5" />Workflows</TabsTrigger>
+          <TabsTrigger value="funding"><Wallet className="mr-1.5 h-3.5 w-3.5" />Funding & Evidence</TabsTrigger>
           <TabsTrigger value="locations"><MapPin className="mr-1.5 h-3.5 w-3.5" />Locations</TabsTrigger>
           <TabsTrigger value="integrations"><Link2 className="mr-1.5 h-3.5 w-3.5" />Integrations</TabsTrigger>
           <TabsTrigger value="billing"><CreditCard className="mr-1.5 h-3.5 w-3.5" />Billing</TabsTrigger>
@@ -296,6 +304,73 @@ export default function Settings() {
         {/* Locations */}
         <TabsContent value="locations">
           <LocationsManager />
+        </TabsContent>
+
+        {/* Funding & Evidence */}
+        <TabsContent value="funding">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">Funding & Evidence Rules</CardTitle>
+              <CardDescription>
+                Controls how funding agreements behave across periods, and what evidence is required to complete a visit.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-medium">Allow unspent funding to roll over</p>
+                  <p className="text-xs text-muted-foreground">
+                    Leftover from earlier periods adds to the current period's available amount. Future periods are never used.
+                  </p>
+                </div>
+                <Switch
+                  checked={!!orgSettings?.allow_unspent_rollover}
+                  onCheckedChange={(v) => updateSettings.mutate({ allow_unspent_rollover: v })}
+                />
+              </div>
+              <Separator />
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-medium">Require geo check-in to complete a visit</p>
+                  <p className="text-xs text-muted-foreground">Worker must capture a GPS fix before the visit can be marked complete.</p>
+                </div>
+                <Switch
+                  checked={!!orgSettings?.require_geo_checkin}
+                  onCheckedChange={(v) => updateSettings.mutate({ require_geo_checkin: v })}
+                />
+              </div>
+              <Separator />
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-medium">Require goal contribution</p>
+                  <p className="text-xs text-muted-foreground">At least one targeted goal must be rated before completing a visit.</p>
+                </div>
+                <Switch
+                  checked={!!orgSettings?.require_goal_contribution}
+                  onCheckedChange={(v) => updateSettings.mutate({ require_goal_contribution: v })}
+                />
+              </div>
+              <Separator />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Default funding period length (months)</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={24}
+                    value={periodMonths}
+                    onChange={(e) => setPeriodMonths(Number(e.target.value) || 3)}
+                    onBlur={() =>
+                      updateSettings.mutate({ default_period_length_months: periodMonths })
+                    }
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    Used as the default split when creating new funding agreements (typically 3 months).
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Integrations */}
