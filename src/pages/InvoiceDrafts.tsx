@@ -1,11 +1,16 @@
 import { Link } from "react-router-dom";
-import { AlertTriangle, CheckCircle2, FileText, ChevronLeft } from "lucide-react";
+import { AlertTriangle, CheckCircle2, FileText, ChevronLeft, Sparkles } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   useDraftInvoiceCandidates,
   useGenerateInvoiceFromVisit,
   type DraftCandidate,
 } from "@/hooks/useDraftInvoices";
+import { supabase } from "@/integrations/supabase/client";
+import { useOrgId } from "@/hooks/useOrg";
+import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 function fmtTime(s: string) {
   return new Date(s).toLocaleString("en-AU", {
@@ -19,6 +24,28 @@ function fmtTime(s: string) {
 export default function InvoiceDrafts() {
   const { data: candidates = [], isLoading } = useDraftInvoiceCandidates();
   const generate = useGenerateInvoiceFromVisit();
+  const orgId = useOrgId();
+  const qc = useQueryClient();
+  const [batchPending, setBatchPending] = useState(false);
+
+  async function batchGenerate() {
+    if (!orgId) return;
+    setBatchPending(true);
+    try {
+      const { data, error } = await (supabase as any).functions.invoke("generate-draft-invoices", {
+        body: { org_id: orgId },
+      });
+      if (error) throw error;
+      const created = data?.created?.length ?? 0;
+      toast.success(`Generated ${created} draft invoice(s)`);
+      qc.invalidateQueries({ queryKey: ["invoices"] });
+      qc.invalidateQueries({ queryKey: ["draft-invoices"] });
+    } catch (e: any) {
+      toast.error(e.message ?? "Batch generation failed");
+    } finally {
+      setBatchPending(false);
+    }
+  }
 
   const ready = candidates.filter((c) => c.warnings.length === 0 && c.amount && c.amount > 0);
   const blocked = candidates.filter((c) => c.warnings.length > 0 || !c.amount);
@@ -26,13 +53,21 @@ export default function InvoiceDrafts() {
   return (
     <div className="space-y-6">
       <div>
-        <Link to="/invoices" className="inline-flex items-center text-xs text-muted-foreground hover:text-foreground">
-          <ChevronLeft className="mr-1 h-3 w-3" /> Back to invoices
-        </Link>
-        <h1 className="mt-1 text-2xl font-semibold">Draft invoices</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Completed visits, ready to invoice. We pull pricing from the active service agreement.
-        </p>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <Link to="/invoices" className="inline-flex items-center text-xs text-muted-foreground hover:text-foreground">
+              <ChevronLeft className="mr-1 h-3 w-3" /> Back to invoices
+            </Link>
+            <h1 className="mt-1 text-2xl font-semibold">Draft invoices</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Completed visits, ready to invoice. We pull pricing from the active service agreement.
+            </p>
+          </div>
+          <Button onClick={batchGenerate} disabled={batchPending}>
+            <Sparkles className="mr-1.5 h-4 w-4" />
+            {batchPending ? "Generating…" : "Batch generate drafts"}
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">

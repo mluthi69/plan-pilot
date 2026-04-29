@@ -37,6 +37,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminTenants from "./pages/admin/AdminTenants";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminPlatformSettings from "./pages/admin/AdminPlatformSettings";
+import EvidencePack from "./pages/EvidencePack";
 
 const queryClient = new QueryClient();
 
@@ -51,6 +52,9 @@ const App = () => (
             {/* Public auth routes */}
             <Route path="/sign-in/*" element={<SignInPage />} />
             <Route path="/sign-up/*" element={<SignUpPage />} />
+
+            {/* Public evidence-pack magic link */}
+            <Route path="/evidence/:token" element={<EvidencePack />} />
 
             {/* Super Admin routes */}
             <Route
