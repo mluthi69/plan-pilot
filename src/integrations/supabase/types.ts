@@ -108,6 +108,45 @@ export type Database = {
           },
         ]
       }
+      booking_goals: {
+        Row: {
+          booking_id: string
+          created_at: string
+          goal_id: string
+          id: string
+          org_id: string
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string
+          goal_id: string
+          id?: string
+          org_id: string
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          goal_id?: string
+          id?: string
+          org_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_goals_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_goals_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "participant_goals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       booking_travel_lines: {
         Row: {
           amount: number
@@ -368,6 +407,45 @@ export type Database = {
             columns: ["agreement_id"]
             isOneToOne: false
             referencedRelation: "funding_agreements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      funding_agreement_category_goals: {
+        Row: {
+          agreement_category_id: string
+          created_at: string
+          goal_id: string
+          id: string
+          org_id: string
+        }
+        Insert: {
+          agreement_category_id: string
+          created_at?: string
+          goal_id: string
+          id?: string
+          org_id: string
+        }
+        Update: {
+          agreement_category_id?: string
+          created_at?: string
+          goal_id?: string
+          id?: string
+          org_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funding_agreement_category_goals_agreement_category_id_fkey"
+            columns: ["agreement_category_id"]
+            isOneToOne: false
+            referencedRelation: "funding_agreement_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "funding_agreement_category_goals_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "participant_goals"
             referencedColumns: ["id"]
           },
         ]

@@ -18,6 +18,9 @@ import { useOrgSettings } from "@/hooks/useOrgSettings";
 import { computeAvailable, findPeriodFor, hoursBetween } from "@/lib/fundingPeriods";
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import { DateTimePicker } from "@progress/kendo-react-dateinputs";
+import { useGoalsForCategory } from "@/hooks/useAgreementCategoryGoals";
+import { useReplaceBookingGoals } from "@/hooks/useBookingGoals";
+import { Target } from "lucide-react";
 
 interface Props {
   open: boolean;
@@ -38,6 +41,7 @@ export default function BookingDrawer({ open, onOpenChange, defaultDate }: Props
   const { data: staff = [] } = useStaff();
   const { data: categories = [] } = useNdisCategories();
   const create = useCreateBooking();
+  const replaceBookingGoals = useReplaceBookingGoals();
 
   const initialStart = snapToHalfHour(defaultDate ?? new Date());
   const initialEnd = new Date(initialStart.getTime() + 60 * 60 * 1000);
@@ -60,6 +64,7 @@ export default function BookingDrawer({ open, onOpenChange, defaultDate }: Props
     end_lng: null,
   });
   const [notes, setNotes] = useState("");
+  const [bookingGoalIds, setBookingGoalIds] = useState<string[]>([]);
 
   // Re-seed dates when drawer is reopened with a new default
   useEffect(() => {
@@ -69,6 +74,7 @@ export default function BookingDrawer({ open, onOpenChange, defaultDate }: Props
       setEndsAt(new Date(s.getTime() + 60 * 60 * 1000));
       setEndTouched(false);
       setStaffIds([]);
+      setBookingGoalIds([]);
       setLocation({
         location_kind: "participant_address",
         participant_address_id: null,
@@ -151,6 +157,17 @@ export default function BookingDrawer({ open, onOpenChange, defaultDate }: Props
     return staff.filter((s) => s.bookable && s.status === "active");
   }, [staff]);
 
+  // Goals available for the chosen participant + category.
+  const { data: goalsForCategory } = useGoalsForCategory(
+    participantId || undefined,
+    supportCategory || undefined,
+  );
+
+  // Reset goal selections when participant or category changes.
+  useEffect(() => {
+    setBookingGoalIds([]);
+  }, [participantId, supportCategory]);
+
   function toggleStaff(id: string) {
     setStaffIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   }
@@ -174,7 +191,7 @@ export default function BookingDrawer({ open, onOpenChange, defaultDate }: Props
       return;
     }
 
-    await create.mutateAsync({
+    const booking = await create.mutateAsync({
       participant_id: participantId,
       staff_ids: staffIds,
       support_category: supportCategory || null,
@@ -195,6 +212,12 @@ export default function BookingDrawer({ open, onOpenChange, defaultDate }: Props
       end_lng: location.end_lng,
       notes: notes || null,
     } as any);
+    if ((booking as any)?.id && bookingGoalIds.length) {
+      await replaceBookingGoals.mutateAsync({
+        booking_id: (booking as any).id,
+        goal_ids: bookingGoalIds,
+      });
+    }
     onOpenChange(false);
   }
 
@@ -301,6 +324,49 @@ export default function BookingDrawer({ open, onOpenChange, defaultDate }: Props
               />
             </div>
           </div>
+
+          {/* Funding live check */}
+          {participantId && supportCategory && (
+            <div className="space-y-1.5">
+              <Label className="flex items-center gap-1.5">
+                <Target className="h-3.5 w-3.5" /> Goals worked on this visit
+              </Label>
+              {!goalsForCategory || goalsForCategory.goals.length === 0 ? (
+                <p className="text-[11px] text-muted-foreground">
+                  No goals available. Add goals to the participant or link them on the agreement.
+                </p>
+              ) : (
+                <div className="space-y-1 rounded-md border border-border p-2">
+                  {!goalsForCategory.linked && (
+                    <p className="px-1 pb-1 text-[10px] text-muted-foreground">
+                      Tip: link goals to this category on the agreement to narrow this list.
+                    </p>
+                  )}
+                  {goalsForCategory.goals.map((g: any) => {
+                    const checked = bookingGoalIds.includes(g.id);
+                    return (
+                      <label key={g.id} className="flex cursor-pointer items-start gap-2 rounded p-1 hover:bg-muted/60">
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={(v) =>
+                            setBookingGoalIds((prev) =>
+                              v ? [...prev, g.id] : prev.filter((x) => x !== g.id),
+                            )
+                          }
+                        />
+                        <span className="text-xs">
+                          <span className="block font-medium leading-tight">{g.title}</span>
+                          {g.ndis_outcome_domain && (
+                            <span className="text-muted-foreground">{g.ndis_outcome_domain}</span>
+                          )}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Funding live check */}
           {participantId && supportCategory && (

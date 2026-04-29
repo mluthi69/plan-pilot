@@ -4,7 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Target, ChevronDown } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import { useNdisCategories } from "@/hooks/useNdisCategories";
 import {
   useCreateFundingAgreement,
@@ -12,6 +15,12 @@ import {
   type FundingAgreement,
 } from "@/hooks/useFundingAgreements";
 import { useOrgSettings } from "@/hooks/useOrgSettings";
+import { useParticipantGoals } from "@/hooks/useGoals";
+import {
+  useAgreementGoalLinks,
+  useReplaceAgreementCategoryGoals,
+} from "@/hooks/useAgreementCategoryGoals";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
   open: boolean;
@@ -25,6 +34,7 @@ interface CategoryDraft {
   id?: string;
   support_category_code: string;
   total_amount: number;
+  goal_ids: string[];
 }
 
 export default function FundingAgreementDialog({ open, onOpenChange, participantId, agreement }: Props) {
@@ -32,7 +42,12 @@ export default function FundingAgreementDialog({ open, onOpenChange, participant
   const { data: orgSettings } = useOrgSettings();
   const create = useCreateFundingAgreement();
   const update = useUpdateFundingAgreement();
+  const replaceLinks = useReplaceAgreementCategoryGoals();
   const isEdit = !!agreement;
+
+  const { data: goals = [] } = useParticipantGoals(participantId);
+  const existingCatIds = (agreement?.categories ?? []).map((c) => c.id);
+  const { data: existingLinks = [] } = useAgreementGoalLinks(existingCatIds);
 
   const today = new Date().toISOString().slice(0, 10);
   const oneYear = new Date();
@@ -44,7 +59,9 @@ export default function FundingAgreementDialog({ open, onOpenChange, participant
   const [periodLength, setPeriodLength] = useState<number>(orgSettings?.default_period_length_months ?? 3);
   const [rolloverOverride, setRolloverOverride] = useState<"inherit" | "yes" | "no">("inherit");
   const [status, setStatus] = useState<FundingAgreement["status"]>("active");
-  const [rows, setRows] = useState<CategoryDraft[]>([{ support_category_code: "", total_amount: 0 }]);
+  const [rows, setRows] = useState<CategoryDraft[]>([
+    { support_category_code: "", total_amount: 0, goal_ids: [] },
+  ]);
 
   useEffect(() => {
     if (!open) return;
@@ -66,6 +83,9 @@ export default function FundingAgreementDialog({ open, onOpenChange, participant
           id: c.id,
           support_category_code: c.support_category_code,
           total_amount: Number(c.total_amount),
+          goal_ids: existingLinks
+            .filter((l) => l.agreement_category_id === c.id)
+            .map((l) => l.goal_id),
         })),
       );
     } else {
@@ -75,13 +95,13 @@ export default function FundingAgreementDialog({ open, onOpenChange, participant
       setPeriodLength(orgSettings?.default_period_length_months ?? 3);
       setRolloverOverride("inherit");
       setStatus("active");
-      setRows([{ support_category_code: "", total_amount: 0 }]);
+      setRows([{ support_category_code: "", total_amount: 0, goal_ids: [] }]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, agreement?.id]);
+  }, [open, agreement?.id, existingLinks.length]);
 
   function addRow() {
-    setRows((r) => [...r, { support_category_code: "", total_amount: 0 }]);
+    setRows((r) => [...r, { support_category_code: "", total_amount: 0, goal_ids: [] }]);
   }
   function updateRow(i: number, patch: Partial<CategoryDraft>) {
     setRows((r) => r.map((row, idx) => (idx === i ? { ...row, ...patch } : row)));
@@ -94,8 +114,9 @@ export default function FundingAgreementDialog({ open, onOpenChange, participant
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    const valid = rows.filter((r) => r.support_category_code && Number(r.total_amount) > 0);
-    if (valid.length === 0) return;
+    const validRows = rows.filter((r) => r.support_category_code && Number(r.total_amount) > 0);
+    if (validRows.length === 0) return;
+    const valid = validRows.map(({ goal_ids: _gi, ...rest }) => rest);
     const allowRollover =
       rolloverOverride === "inherit" ? null : rolloverOverride === "yes";
     if (isEdit && agreement) {
@@ -109,8 +130,24 @@ export default function FundingAgreementDialog({ open, onOpenChange, participant
         status,
         categories: valid,
       });
+      // Refetch fresh category ids (some may be brand new) to map by code, then save links.
+      const { data: freshCats } = await (supabase as any)
+        .from("funding_agreement_categories")
+        .select("id, support_category_code")
+        .eq("agreement_id", agreement.id);
+      const codeToId = new Map<string, string>(
+        (freshCats ?? []).map((c: any) => [c.support_category_code, c.id]),
+      );
+      for (const r of validRows) {
+        const catId = r.id ?? codeToId.get(r.support_category_code);
+        if (!catId) continue;
+        await replaceLinks.mutateAsync({
+          agreement_category_id: catId,
+          goal_ids: r.goal_ids,
+        });
+      }
     } else {
-      await create.mutateAsync({
+      const result = await create.mutateAsync({
         participant_id: participantId,
         title,
         start_date: start,
@@ -120,6 +157,18 @@ export default function FundingAgreementDialog({ open, onOpenChange, participant
         status: "active",
         categories: valid,
       });
+      const codeToId = new Map<string, string>(
+        ((result as any)?.inserted_categories ?? []).map((c: any) => [c.support_category_code, c.id]),
+      );
+      for (const r of validRows) {
+        if (!r.goal_ids.length) continue;
+        const catId = codeToId.get(r.support_category_code);
+        if (!catId) continue;
+        await replaceLinks.mutateAsync({
+          agreement_category_id: catId,
+          goal_ids: r.goal_ids,
+        });
+      }
     }
     onOpenChange(false);
   }
@@ -194,6 +243,7 @@ export default function FundingAgreementDialog({ open, onOpenChange, participant
                   <tr className="border-b text-xs text-muted-foreground">
                     <th className="px-3 py-2 text-left font-medium">NDIS support category</th>
                     <th className="px-3 py-2 text-right font-medium">Total amount</th>
+                    <th className="px-3 py-2 text-left font-medium">Linked goals</th>
                     <th className="w-10"></th>
                   </tr>
                 </thead>
@@ -225,6 +275,63 @@ export default function FundingAgreementDialog({ open, onOpenChange, participant
                           onChange={(e) => updateRow(i, { total_amount: Number(e.target.value) || 0 })}
                         />
                       </td>
+                      <td className="px-3 py-2">
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="h-8 w-full justify-between font-normal"
+                            >
+                              <span className="flex items-center gap-1.5 truncate">
+                                <Target className="h-3 w-3" />
+                                {r.goal_ids.length === 0
+                                  ? "Optional"
+                                  : `${r.goal_ids.length} goal${r.goal_ids.length === 1 ? "" : "s"}`}
+                              </span>
+                              <ChevronDown className="h-3 w-3 opacity-60" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-72 p-0" align="end">
+                            {goals.length === 0 ? (
+                              <p className="p-3 text-xs text-muted-foreground">
+                                No goals on this participant yet. Add some on the Goals tab.
+                              </p>
+                            ) : (
+                              <div className="max-h-64 overflow-auto p-2">
+                                {goals.map((g) => {
+                                  const checked = r.goal_ids.includes(g.id);
+                                  return (
+                                    <label
+                                      key={g.id}
+                                      className="flex cursor-pointer items-start gap-2 rounded p-1.5 hover:bg-muted/60"
+                                    >
+                                      <Checkbox
+                                        checked={checked}
+                                        onCheckedChange={(v) => {
+                                          const next = v
+                                            ? [...r.goal_ids, g.id]
+                                            : r.goal_ids.filter((x) => x !== g.id);
+                                          updateRow(i, { goal_ids: next });
+                                        }}
+                                      />
+                                      <span className="space-y-0.5 text-xs">
+                                        <span className="block font-medium leading-tight">{g.title}</span>
+                                        {g.ndis_outcome_domain && (
+                                          <Badge variant="outline" className="text-[10px]">
+                                            {g.ndis_outcome_domain}
+                                          </Badge>
+                                        )}
+                                      </span>
+                                    </label>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </PopoverContent>
+                        </Popover>
+                      </td>
                       <td className="px-2 py-2 text-right">
                         <button type="button" onClick={() => removeRow(i)} className="text-muted-foreground hover:text-destructive">
                           <Trash2 className="h-3.5 w-3.5" />
@@ -237,6 +344,7 @@ export default function FundingAgreementDialog({ open, onOpenChange, participant
                   <tr className="bg-muted/30 text-xs">
                     <td className="px-3 py-2 text-right font-medium">Total</td>
                     <td className="px-3 py-2 text-right font-semibold">${total.toLocaleString("en-AU", { minimumFractionDigits: 2 })}</td>
+                    <td></td>
                     <td></td>
                   </tr>
                 </tfoot>
