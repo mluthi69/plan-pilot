@@ -276,7 +276,7 @@ export default function ParticipantDetail() {
                         <TableRow
                           key={b.id}
                           className={visit ? "cursor-pointer hover:bg-muted/50" : ""}
-                          onClick={() => visit && (window.location.href = href)}
+                          onClick={() => visit && (navigate(href))}
                         >
                           <TableCell className="text-xs">{formatDateTime(b.starts_at)}</TableCell>
                           <TableCell className="text-sm">
@@ -337,7 +337,7 @@ export default function ParticipantDetail() {
                       <TableRow
                         key={v.id}
                         className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => (window.location.href = `/visits/${v.id}`)}
+                        onClick={() => (navigate(`/visits/${v.id}`))}
                       >
                         <TableCell className="text-xs">
                           {formatDateTime(v.scheduled_start)}
