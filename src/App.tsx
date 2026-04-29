@@ -29,6 +29,7 @@ import Documents from "./pages/Documents";
 import Reports from "./pages/Reports";
 import Invoices from "./pages/Invoices";
 import InvoiceDrafts from "./pages/InvoiceDrafts";
+import InvoiceDetail from "./pages/InvoiceDetail";
 import Staff from "./pages/Staff";
 import StaffDetail from "./pages/StaffDetail";
 import SignInPage from "./pages/SignIn";
@@ -102,6 +103,7 @@ const App = () => (
               <Route path="/agreements" element={<Agreements />} />
               <Route path="/invoices" element={<Invoices />} />
               <Route path="/invoices/drafts" element={<InvoiceDrafts />} />
+              <Route path="/invoices/:id" element={<InvoiceDetail />} />
               <Route path="/exceptions" element={<Exceptions />} />
               <Route path="/documents" element={<Documents />} />
               <Route path="/reports" element={<Reports />} />

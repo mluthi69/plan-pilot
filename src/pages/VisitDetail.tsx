@@ -8,6 +8,9 @@ import { useNotes } from "@/hooks/useNotes";
 import NoteComposer from "@/components/NoteComposer";
 import BookingTravelPanel from "@/components/locations/BookingTravelPanel";
 import VisitEvidencePanel from "@/components/visits/VisitEvidencePanel";
+import { useOrgSettings } from "@/hooks/useOrgSettings";
+import { useVisitGeoFixes } from "@/hooks/useVisitGeoFixes";
+import { useVisitGoalContributions } from "@/hooks/useGoals";
 
 const statusBadge: Record<string, string> = {
   scheduled: "bg-info/10 text-info border-info/30",
@@ -22,6 +25,9 @@ export default function VisitDetail() {
   const navigate = useNavigate();
   const { data: visit, isLoading } = useVisit(id);
   const { data: notes = [] } = useNotes({ visitId: id });
+  const { data: settings } = useOrgSettings();
+  const { data: geoFixes = [] } = useVisitGeoFixes(id);
+  const { data: contributions = [] } = useVisitGoalContributions(id);
   const start = useStartVisit();
   const end = useEndVisit();
   const sign = useSignVisit();
@@ -35,6 +41,23 @@ export default function VisitDetail() {
 
   const fmt = (s: string | null) =>
     s ? new Date(s).toLocaleString("en-AU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "—";
+
+  const requireGeo = !!settings?.require_geo_checkin;
+  const requireGoal = !!settings?.require_goal_contribution;
+  const hasCheckIn = geoFixes.some((f) => f.kind === "check_in");
+  const hasCheckOut = geoFixes.some((f) => f.kind === "check_out");
+  const hasRatedContribution = contributions.some(
+    (c) => c.progress_rating != null && c.progress_rating > 0,
+  );
+  const gates: { label: string; ok: boolean }[] = [];
+  if (requireGeo) {
+    gates.push({ label: "Geo check-in captured", ok: hasCheckIn });
+    gates.push({ label: "Geo check-out captured", ok: hasCheckOut });
+  }
+  if (requireGoal) {
+    gates.push({ label: "Goal contribution rated", ok: hasRatedContribution });
+  }
+  const blockComplete = gates.some((g) => !g.ok);
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -75,7 +98,11 @@ export default function VisitDetail() {
           </Button>
         )}
         {visit.status === "in_progress" && (
-          <Button onClick={() => end.mutate(visit.id)} disabled={end.isPending}>
+          <Button
+            onClick={() => end.mutate(visit.id)}
+            disabled={end.isPending || blockComplete}
+            title={blockComplete ? "Complete the required evidence first" : undefined}
+          >
             <CheckCircle2 className="mr-1.5 h-4 w-4" /> Complete visit
           </Button>
         )}
@@ -84,6 +111,27 @@ export default function VisitDetail() {
           {showNote ? "Hide note" : "Add note"}
         </Button>
       </div>
+
+      {/* Completion checklist — only shown when there are gates and visit is not yet completed */}
+      {gates.length > 0 && visit.status !== "completed" && visit.status !== "cancelled" && (
+        <div className="rounded-lg border border-border bg-card p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Required before completion
+          </p>
+          <ul className="mt-2 space-y-1 text-sm">
+            {gates.map((g) => (
+              <li key={g.label} className="flex items-center gap-2">
+                <CheckCircle2
+                  className={`h-3.5 w-3.5 ${g.ok ? "text-success" : "text-muted-foreground/40"}`}
+                />
+                <span className={g.ok ? "text-foreground" : "text-muted-foreground"}>
+                  {g.label}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Timing */}
       <div className="grid gap-3 sm:grid-cols-2">

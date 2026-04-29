@@ -196,7 +196,9 @@ export default function Invoices() {
                         <span className="text-[10px] text-muted-foreground/60">—</span>
                       )}
                     </td>
-                    <td className="px-5 py-3 font-mono text-xs font-medium text-card-foreground">{inv.invoice_number}</td>
+                    <td className="px-5 py-3 font-mono text-xs font-medium text-card-foreground">
+                      <Link to={`/invoices/${inv.id}`} className="hover:underline">{inv.invoice_number}</Link>
+                    </td>
                     <td className="px-5 py-3 text-card-foreground">{inv.provider?.name ?? "—"}</td>
                     <td className="px-5 py-3 text-muted-foreground">{inv.participant?.name ?? "—"}</td>
                     <td className="px-5 py-3 text-xs text-muted-foreground">{inv.category}</td>
