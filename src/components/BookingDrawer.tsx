@@ -49,7 +49,6 @@ export default function BookingDrawer({ open, onOpenChange, defaultDate }: Props
   const [participantId, setParticipantId] = useState("");
   const [staffIds, setStaffIds] = useState<string[]>([]);
   const [supportCategory, setSupportCategory] = useState<string>("");
-  const [serviceType, setServiceType] = useState("Personal care");
   const [startsAt, setStartsAt] = useState(toLocalInput(initialStart));
   const [endsAt, setEndsAt] = useState(toLocalInput(initialEnd));
   const [unitPrice, setUnitPrice] = useState<string>("");
@@ -99,10 +98,10 @@ export default function BookingDrawer({ open, onOpenChange, defaultDate }: Props
     return codes;
   }, [agreements]);
 
-  const visibleCategories = useMemo(() => {
-    if (allowedCategoryCodes.size === 0) return categories;
-    return categories.filter((c) => allowedCategoryCodes.has(c.code));
-  }, [categories, allowedCategoryCodes]);
+  const visibleCategories = useMemo(
+    () => categories.filter((c) => allowedCategoryCodes.has(c.code)),
+    [categories, allowedCategoryCodes],
+  );
 
   const hours = useMemo(() => {
     try { return hoursBetween(new Date(startsAt), new Date(endsAt)); } catch { return 0; }
@@ -179,7 +178,6 @@ export default function BookingDrawer({ open, onOpenChange, defaultDate }: Props
       participant_id: participantId,
       staff_ids: staffIds,
       support_category: supportCategory || null,
-      service_type: serviceType,
       starts_at: startD.toISOString(),
       ends_at: endD.toISOString(),
       // Persist quantity/unit/unit_price so spend math + invoicing work later.
@@ -221,24 +219,33 @@ export default function BookingDrawer({ open, onOpenChange, defaultDate }: Props
 
           <div className="space-y-1.5">
             <Label>NDIS support category</Label>
-            <Select value={supportCategory} onValueChange={setSupportCategory}>
-              <SelectTrigger><SelectValue placeholder="Select category…" /></SelectTrigger>
+            <Select
+              value={supportCategory}
+              onValueChange={setSupportCategory}
+              disabled={!participantId || visibleCategories.length === 0}
+            >
+              <SelectTrigger>
+                <SelectValue
+                  placeholder={
+                    !participantId
+                      ? "Select a participant first…"
+                      : visibleCategories.length === 0
+                        ? "No active agreement categories"
+                        : "Select category…"
+                  }
+                />
+              </SelectTrigger>
               <SelectContent>
                 {visibleCategories.map((c) => (
                   <SelectItem key={c.code} value={c.code}>{c.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            {allowedCategoryCodes.size > 0 && (
+            {participantId && visibleCategories.length === 0 && (
               <p className="text-[11px] text-muted-foreground">
-                Showing only categories covered by an active agreement.
+                This participant has no active funding agreement. Add one on their profile to enable booking.
               </p>
             )}
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>Service type</Label>
-            <Input value={serviceType} onChange={(e) => setServiceType(e.target.value)} />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
