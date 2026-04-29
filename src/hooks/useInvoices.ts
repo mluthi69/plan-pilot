@@ -73,6 +73,32 @@ export function useProviderInvoices(providerId: string | undefined) {
   });
 }
 
+export function useInvoice(id: string | undefined) {
+  const orgId = useOrgId();
+  return useQuery({
+    queryKey: ["invoices", orgId, "single", id],
+    enabled: !!orgId && !!id,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("invoices")
+        .select("*, providers(name, abn), participants(name)")
+        .eq("id", id)
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) return null;
+      return {
+        ...data,
+        provider: data.providers
+          ? { id: data.provider_id, name: data.providers.name, abn: data.providers.abn ?? null }
+          : null,
+        participant: data.participants
+          ? { id: data.participant_id, name: data.participants.name }
+          : null,
+      } as Invoice;
+    },
+  });
+}
+
 export function useCreateInvoice() {
   const queryClient = useQueryClient();
   const orgId = useOrgId();
