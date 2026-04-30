@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { FileSignature, Plus, CheckCircle2, Send } from "lucide-react";
+import { FileSignature, Plus, CheckCircle2, Send, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAgreements, useUpdateAgreementStatus } from "@/hooks/useAgreements";
+import { useAgreements, useUpdateAgreementStatus, type ServiceAgreement } from "@/hooks/useAgreements";
 import AgreementBuilderDialog from "@/components/AgreementBuilderDialog";
 
 const statusBadge: Record<string, string> = {
@@ -17,6 +17,7 @@ export default function Agreements() {
   const { data = [], isLoading } = useAgreements();
   const updateStatus = useUpdateAgreementStatus();
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<ServiceAgreement | null>(null);
 
   return (
     <div className="space-y-6">
@@ -80,7 +81,10 @@ export default function Agreements() {
                       {a.status.replace("_", " ")}
                     </span>
                   </td>
-                  <td className="px-5 py-3 text-right">
+                  <td className="px-5 py-3 text-right space-x-1">
+                    <Button size="sm" variant="ghost" onClick={() => { setEditing(a); setOpen(true); }}>
+                      <Pencil className="mr-1 h-3.5 w-3.5" /> Edit
+                    </Button>
                     {a.status === "draft" && (
                       <Button size="sm" variant="ghost" onClick={() => updateStatus.mutate({ id: a.id, status: "pending_review" })}>
                         <Send className="mr-1 h-3.5 w-3.5" /> Send
@@ -98,7 +102,11 @@ export default function Agreements() {
           </table>
         )}
       </div>
-      <AgreementBuilderDialog open={open} onOpenChange={setOpen} />
+      <AgreementBuilderDialog
+        open={open}
+        onOpenChange={(v) => { setOpen(v); if (!v) setEditing(null); }}
+        agreement={editing}
+      />
     </div>
   );
 }
