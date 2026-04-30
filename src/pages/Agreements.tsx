@@ -1,9 +1,7 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { FileSignature, Plus, CheckCircle2, Send, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAgreements, useUpdateAgreementStatus, type ServiceAgreement } from "@/hooks/useAgreements";
-import AgreementBuilderDialog from "@/components/AgreementBuilderDialog";
+import { useAgreements, useUpdateAgreementStatus } from "@/hooks/useAgreements";
 
 const statusBadge: Record<string, string> = {
   draft: "bg-muted text-muted-foreground border-border",
@@ -16,8 +14,7 @@ const statusBadge: Record<string, string> = {
 export default function Agreements() {
   const { data = [], isLoading } = useAgreements();
   const updateStatus = useUpdateAgreementStatus();
-  const [open, setOpen] = useState(false);
-  const [editing, setEditing] = useState<ServiceAgreement | null>(null);
+  const navigate = useNavigate();
 
   return (
     <div className="space-y-6">
@@ -26,7 +23,7 @@ export default function Agreements() {
           <h1 className="text-2xl font-semibold">Service agreements</h1>
           <p className="mt-1 text-sm text-muted-foreground">Linked to support items, pricing, and cancellation rules.</p>
         </div>
-        <Button onClick={() => setOpen(true)}>
+        <Button onClick={() => navigate("/agreements/new")}>
           <Plus className="mr-1.5 h-4 w-4" />
           New agreement
         </Button>
@@ -42,7 +39,7 @@ export default function Agreements() {
             <p className="max-w-sm text-xs text-muted-foreground">
               Agreements link participants to specific support items, prices, and cancellation rules.
             </p>
-            <Button size="sm" className="mt-3" onClick={() => setOpen(true)}>
+            <Button size="sm" className="mt-3" onClick={() => navigate("/agreements/new")}>
               <Plus className="mr-1.5 h-4 w-4" />
               Create first agreement
             </Button>
@@ -82,7 +79,7 @@ export default function Agreements() {
                     </span>
                   </td>
                   <td className="px-5 py-3 text-right space-x-1">
-                    <Button size="sm" variant="ghost" onClick={() => { setEditing(a); setOpen(true); }}>
+                    <Button size="sm" variant="ghost" onClick={() => navigate(`/agreements/${a.id}`)}>
                       <Pencil className="mr-1 h-3.5 w-3.5" /> Edit
                     </Button>
                     {a.status === "draft" && (
@@ -102,11 +99,6 @@ export default function Agreements() {
           </table>
         )}
       </div>
-      <AgreementBuilderDialog
-        open={open}
-        onOpenChange={(v) => { setOpen(v); if (!v) setEditing(null); }}
-        agreement={editing}
-      />
     </div>
   );
 }
