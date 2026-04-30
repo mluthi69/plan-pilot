@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,6 +6,7 @@ import { useOrgId } from "@/hooks/useOrg";
 import { useParticipants } from "@/hooks/useParticipantsDb";
 import { useUser } from "@clerk/clerk-react";
 import { toast } from "sonner";
+import type { ServiceAgreement } from "@/hooks/useAgreements";
 import {
   Dialog,
   DialogContent,
@@ -53,13 +54,15 @@ interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   defaultParticipantId?: string;
+  agreement?: ServiceAgreement | null;
 }
 
-export default function AgreementBuilderDialog({ open, onOpenChange, defaultParticipantId }: Props) {
+export default function AgreementBuilderDialog({ open, onOpenChange, defaultParticipantId, agreement }: Props) {
   const orgId = useOrgId();
   const { user } = useUser();
   const qc = useQueryClient();
   const { data: participants = [] } = useParticipants();
+  const isEdit = !!agreement;
 
   const [step, setStep] = useState(1);
   const [participantId, setParticipantId] = useState<string>(defaultParticipantId ?? "");
@@ -73,6 +76,27 @@ export default function AgreementBuilderDialog({ open, onOpenChange, defaultPart
   const [items, setItems] = useState<Item[]>([]);
   const [cancellationPolicy, setCancellationPolicy] = useState(DEFAULT_TERMS.cancellation);
   const [travelPolicy, setTravelPolicy] = useState(DEFAULT_TERMS.travel);
+
+  useEffect(() => {
+    if (open && agreement) {
+      setStep(1);
+      setParticipantId(agreement.participant_id);
+      setTitle(agreement.title);
+      setStartDate(agreement.start_date);
+      setEndDate(agreement.end_date);
+      setItems(
+        (agreement.items ?? []).map((it: any) => ({
+          code: it.code ?? "",
+          description: it.description ?? "",
+          unit_price: Number(it.unit_price ?? 0),
+          quantity: Number(it.quantity ?? 1),
+          frequency: it.frequency ?? "per week",
+        })),
+      );
+      setCancellationPolicy(agreement.cancellation_policy ?? DEFAULT_TERMS.cancellation);
+      setTravelPolicy(agreement.travel_policy ?? DEFAULT_TERMS.travel);
+    }
+  }, [open, agreement]);
 
   const totalValue = useMemo(
     () => items.reduce((n, it) => n + it.unit_price * it.quantity, 0),
@@ -110,13 +134,11 @@ export default function AgreementBuilderDialog({ open, onOpenChange, defaultPart
     setItems((prev) => prev.filter((_, i) => i !== idx));
   };
 
-  const create = useMutation({
+  const save = useMutation({
     mutationFn: async (status: "draft" | "pending_review") => {
       if (!orgId) throw new Error("No organization");
       if (!participantId) throw new Error("Select a participant");
-      const { error } = await (supabase as any).from("service_agreements").insert({
-        org_id: orgId,
-        participant_id: participantId,
+      const payload: any = {
         title,
         status,
         start_date: startDate,
@@ -125,27 +147,40 @@ export default function AgreementBuilderDialog({ open, onOpenChange, defaultPart
         cancellation_policy: cancellationPolicy,
         travel_policy: travelPolicy,
         items,
-        created_by: user?.id ?? null,
-      });
-      if (error) throw error;
+      };
+      if (isEdit && agreement) {
+        const { error } = await (supabase as any)
+          .from("service_agreements")
+          .update(payload)
+          .eq("id", agreement.id);
+        if (error) throw error;
+      } else {
+        const { error } = await (supabase as any).from("service_agreements").insert({
+          ...payload,
+          org_id: orgId,
+          participant_id: participantId,
+          created_by: user?.id ?? null,
+        });
+        if (error) throw error;
+      }
     },
     onSuccess: (_data, status) => {
       qc.invalidateQueries({ queryKey: ["agreements"] });
-      toast.success(status === "draft" ? "Draft saved" : "Sent for review");
+      toast.success(isEdit ? "Agreement saved" : status === "draft" ? "Draft saved" : "Sent for review");
       onOpenChange(false);
-      reset();
+      if (!isEdit) reset();
     },
-    onError: (e: any) => toast.error(e.message ?? "Failed to create agreement"),
+    onError: (e: any) => toast.error(e.message ?? "Failed to save agreement"),
   });
 
   const canNext1 = participantId && title && startDate && endDate;
   const canNext2 = items.length > 0 && items.every((i) => i.description && i.unit_price > 0);
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { if (!v) reset(); onOpenChange(v); }}>
+    <Dialog open={open} onOpenChange={(v) => { if (!v && !isEdit) reset(); onOpenChange(v); }}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>New service agreement</DialogTitle>
+          <DialogTitle>{isEdit ? "Edit service agreement" : "New service agreement"}</DialogTitle>
           <DialogDescription>Step {step} of 3 — {step === 1 ? "Basics" : step === 2 ? "Supports & pricing" : "Terms & review"}</DialogDescription>
         </DialogHeader>
 
@@ -163,7 +198,7 @@ export default function AgreementBuilderDialog({ open, onOpenChange, defaultPart
           <div className="space-y-4 py-2">
             <div>
               <Label htmlFor="participant">Participant</Label>
-              <Select value={participantId} onValueChange={setParticipantId}>
+              <Select value={participantId} onValueChange={setParticipantId} disabled={isEdit}>
                 <SelectTrigger id="participant">
                   <SelectValue placeholder="Select participant" />
                 </SelectTrigger>
@@ -327,12 +362,20 @@ export default function AgreementBuilderDialog({ open, onOpenChange, defaultPart
               </Button>
             ) : (
               <>
-                <Button variant="outline" onClick={() => create.mutate("draft")} disabled={create.isPending}>
-                  Save draft
-                </Button>
-                <Button onClick={() => create.mutate("pending_review")} disabled={create.isPending}>
-                  Send for review
-                </Button>
+                {isEdit ? (
+                  <Button onClick={() => save.mutate(agreement!.status as any)} disabled={save.isPending}>
+                    Save changes
+                  </Button>
+                ) : (
+                  <>
+                    <Button variant="outline" onClick={() => save.mutate("draft")} disabled={save.isPending}>
+                      Save draft
+                    </Button>
+                    <Button onClick={() => save.mutate("pending_review")} disabled={save.isPending}>
+                      Send for review
+                    </Button>
+                  </>
+                )}
               </>
             )}
           </div>

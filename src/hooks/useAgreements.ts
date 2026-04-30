@@ -72,3 +72,21 @@ export function useUpdateAgreementStatus() {
     onError: (e: any) => toast.error(e.message ?? "Failed to update agreement"),
   });
 }
+
+export function useUpdateAgreement() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, patch }: { id: string; patch: Partial<ServiceAgreement> & { items?: AgreementItem[] } }) => {
+      const { error } = await (supabase as any)
+        .from("service_agreements")
+        .update(patch)
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["agreements"] });
+      toast.success("Agreement saved");
+    },
+    onError: (e: any) => toast.error(e.message ?? "Failed to save agreement"),
+  });
+}
