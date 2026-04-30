@@ -24,6 +24,7 @@ import Visits from "./pages/Visits";
 import VisitDetail from "./pages/VisitDetail";
 import MyDay from "./pages/MyDay";
 import Agreements from "./pages/Agreements";
+import AgreementEdit from "./pages/AgreementEdit";
 import Exceptions from "./pages/Exceptions";
 import Documents from "./pages/Documents";
 import Reports from "./pages/Reports";
@@ -105,6 +106,8 @@ const App = () => (
               <Route path="/staff" element={<Staff />} />
               <Route path="/staff/:id" element={<StaffDetail />} />
               <Route path="/agreements" element={<Agreements />} />
+              <Route path="/agreements/new" element={<AgreementEdit />} />
+              <Route path="/agreements/:id" element={<AgreementEdit />} />
               <Route path="/invoices" element={<Invoices />} />
               <Route path="/invoices/drafts" element={<InvoiceDrafts />} />
               <Route path="/invoices/:id" element={<InvoiceDetail />} />
